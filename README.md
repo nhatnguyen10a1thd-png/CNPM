@@ -1,5 +1,67 @@
 # LUNEA – Website Bán Mỹ Phẩm Theo Mô Hình Chuỗi Cửa Hàng
 
+Muốn chuyển từ demo sang dữ liệu và dịch vụ thật: điền [biểu mẫu thông tin triển khai](docs/THONG_TIN_CAN_DIEN.md) và tệp cấu hình cục bộ `.local/production.env` được liên kết trong biểu mẫu. Phase 5–32 vẫn nằm trong roadmap, chưa có chức năng hoàn chỉnh.
+
+## Chạy giao diện local với Supabase
+
+Schema `lunea` đã được khởi tạo trên Supabase theo [runbook Supabase](docs/database/SUPABASE.md). Để dùng database thật thay vì H2 demo, tại thư mục `CNPM` chạy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-supabase-local.ps1 -Port 8081
+```
+
+Mở **http://localhost:8081**. Script chỉ lắng nghe trên máy này, đọc `.local/production.env`, đặt URL recovery/cookie phù hợp HTTP localhost và không bật profile `demo`. Có thể thử đăng ký/đăng nhập khách hàng và dùng tài khoản ADMIN thật đã cấp để kiểm tra vai trò, nhân viên, chi nhánh; tài khoản demo không tồn tại trên Supabase. Nếu chưa có JAR hoặc vừa sửa Java, chạy `.\mvnw.cmd package` trước. Email recovery cần thử bằng hộp thư thật do bạn sở hữu; chưa có hosting/HTTPS công khai.
+
+## Chạy giao diện test phase 1–4
+
+Đã có Spring Boot 4.1.1/Java 21, giao diện HTML/CSS/JavaScript cùng ứng dụng, đăng nhập khách hàng/nhân viên bằng email hoặc điện thoại, đăng ký, đăng xuất, khôi phục mật khẩu, quản lý nhân viên/vai trò/quyền/chi nhánh và audit writer. Kiến trúc REST → service → repository được giữ.
+
+Tại thư mục `CNPM`, chạy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-demo.ps1
+```
+
+Mở **http://localhost:8080**. Script ưu tiên Java 21 đã cài ở máy này; máy khác đặt `JAVA_HOME` tới JDK 21. Có thể dùng `-Port 8081` nếu cổng 8080 đang bận. Không cần Node/npm hoặc PostgreSQL cho demo. H2 chỉ là dữ liệu demo trong bộ nhớ; khởi động lại sẽ phục hồi fixtures.
+
+| Tài khoản demo | Mật khẩu | Mục đích |
+|---|---|---|
+| `admin@lunea.test` | `DemoAdmin123` | Quản lý nhân viên, vai trò, quyền và chi nhánh |
+| `kho@lunea.test` | `KhoDemo123` | Quyền kho tại chi nhánh 1; chi nhánh 2 trả 403 |
+| `customer@lunea.test` | `DemoUser123` | Đăng nhập khách hàng, xem phiên và thử reset mật khẩu |
+
+Các mật khẩu này chỉ được seed ở profile **demo**, ràng buộc loopback; cấu hình mặc định không seed tài khoản. Giao diện có nút điền nhanh tài khoản khi nhận diện demo.
+
+Thử theo thứ tự:
+
+1. Đăng ký email mới với mật khẩu ít nhất 8 ký tự gồm chữ/số, xác nhận mật khẩu và chấp nhận điều khoản; đăng nhập rồi đăng xuất.
+2. Chọn **Quên mật khẩu**, nhập email demo, mở link trong **Hộp thư demo** và đặt mật khẩu mới. Link dùng một lần, hết hạn sau 15 phút; các phiên cũ mất hiệu lực.
+3. Đăng nhập quản trị, thêm/sửa/ngừng hoạt động nhân viên, chọn vai trò và một chi nhánh chính trong các chi nhánh được cấp. Không dùng mật khẩu chung khi tạo nhân viên.
+4. Trong **Vai trò & quyền**, bỏ/cấp quyền cho vai trò QLTK; nhân viên nhận thay đổi ngay trong phiên hiện tại khi thực hiện yêu cầu mới. ADMIN là vai trò dành riêng và không thể gỡ quyền.
+5. Đăng nhập nhân viên kho, dùng form kiểm tra chi nhánh: mã 1 được phép, mã 2 bị từ chối. Khách hàng không được truy cập API quản trị.
+
+### Build và tests
+
+```powershell
+$env:JAVA_HOME = 'C:/Program Files/Java/jdk-21.0.10'
+.\mvnw.cmd test
+.\mvnw.cmd package
+```
+
+Tests mặc định dùng H2 riêng, không kết nối DB dev. PostgreSQL 16 test có profile `test-postgres`, yêu cầu DB riêng có tên kết thúc `_test`; xem [runbook DB](docs/database/README.md). Report/evidence ở [báo cáo phase 1–4](docs/PHASE_01_04_REPORT.md).
+
+### PostgreSQL và email thực
+
+Cấu hình mặc định dùng PostgreSQL và `ddl-auto=validate`. Đặt `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; kiểm kê schema và áp migration thủ công theo [runbook](docs/database/README.md) trước khởi động. Không tự reset DB hay chạy Hibernate update trên dữ liệu cũ. Credential plaintext cũ không đăng nhập được; dùng recovery đã xác minh để đặt hash mới.
+
+Recovery ngoài demo dùng SMTP: đặt `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `MAIL_FROM`, `APP_BASE_URL`; TLS/auth mặc định bật. Khi dùng HTTPS đặt `COOKIE_SECURE=true`. SMTP không được cấu hình thì yêu cầu vẫn trả thông báo chung, không tạo link có hiệu lực. Thư demo chỉ tồn tại trong bộ nhớ và chỉ đọc được từ loopback.
+
+Session/CSRF bảo vệ mọi mutation. Mật khẩu BCrypt, token reset chỉ lưu hash trong DB. Lỗi JSON có `status`, `code`, `message`, `path`, `fieldErrors`; lỗi nội bộ không trả stack trace/secret. Các luồng riêng tư cart/order/return/review/customer thuộc phase sau còn khóa; xem [ma trận quyền và route](docs/STAFF_ACCESS.md). Supabase đã có schema và ADMIN thật để kiểm tra Phase 1–4; còn cần thử email đến hộp thư, khai báo hosting/HTTPS và thay chi nhánh ảo trước khi công khai. Dữ liệu database cũ và các phase 5–32 là công việc riêng.
+
+## Tài liệu phân tích thiết kế tham khảo
+
+Nội dung bên dưới mô tả mục tiêu tổng thể của đồ án; trạng thái cài đặt hiện tại nằm ở phần chạy/test và các completion report phía trên.
+
 Đồ án môn học **Công nghệ Phần mềm** – Tài liệu phân tích & thiết kế hệ thống cho website thương mại điện tử ngành mỹ phẩm, vận hành theo mô hình **chuỗi cửa hàng** (quản lý sản phẩm tập trung, tồn kho theo từng chi nhánh).
 
 ---
@@ -38,7 +100,7 @@ Repo này tổng hợp toàn bộ tài liệu phân tích – thiết kế của
 4. **Thiết kế dữ liệu** – lược đồ logic và chi tiết 37 bảng dữ liệu.
 5. **Thiết kế giao diện** – danh sách màn hình, sơ đồ luân chuyển và mô tả chi tiết từng màn hình.
 
-> **Trạng thái:** Repo hiện chứa tài liệu **phân tích & thiết kế** (SRS, use case, ERD, UI design). Phần cài đặt mã nguồn/chọn công nghệ triển khai cụ thể chưa nằm trong phạm vi tài liệu này.
+> **Trạng thái:** Repo có mã nguồn backend và giao diện test phase 1–4. Danh sách chức năng trong phần thiết kế này còn gồm các phase chưa cài đặt; không coi toàn bộ danh sách là tính năng đã hoàn thành.
 
 ---
 
