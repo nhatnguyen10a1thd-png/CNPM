@@ -26,5 +26,7 @@ public class BrandEntity {
 
     private String description;
 
+    @Enumerated(EnumType.ORDINAL)
+    @Column(columnDefinition = "smallint")
     private ActiveStatus status;
 }

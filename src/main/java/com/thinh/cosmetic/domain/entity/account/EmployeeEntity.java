@@ -19,14 +19,18 @@ public class EmployeeEntity {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id", nullable = false, unique = true)
     private AccountEntity account;
 
+    @Column(nullable = false, length = 150)
     private String fullName;
 
+    @Column(nullable = false, unique = true)
     private String internalEmail;
 
     private String phone;
 
+    @Enumerated(EnumType.ORDINAL)
+    @Column(columnDefinition = "smallint")
     private ActiveStatus status;
 }

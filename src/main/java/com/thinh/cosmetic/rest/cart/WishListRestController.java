@@ -5,33 +5,36 @@ import com.thinh.cosmetic.service.cart.WishListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/wishlist")
 @RequiredArgsConstructor
 public class WishListRestController {
     private final WishListService wishListService;
+    private final CurrentAccountResolver currentAccount;
 
     @GetMapping
     public ResponseEntity<WishListResponse> getWishList(
-            @RequestParam(required = false, defaultValue = "1") Long customerId
+            @RequestParam(required = false) Long customerId
     ) throws Exception {
-        return ResponseEntity.ok(wishListService.getWishList(customerId));
+        return ResponseEntity.ok(wishListService.getWishList(currentAccount.requireCustomerId()));
     }
 
     @PostMapping("/products/{productId}")
     public ResponseEntity<WishListResponse> addProduct(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @PathVariable Long productId
     ) throws Exception {
-        return ResponseEntity.ok(wishListService.addProduct(customerId, productId));
+        return ResponseEntity.ok(wishListService.addProduct(currentAccount.requireCustomerId(), productId));
     }
 
     @DeleteMapping("/products/{productId}")
     public ResponseEntity<WishListResponse> removeProduct(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @PathVariable Long productId
     ) throws Exception {
-        return ResponseEntity.ok(wishListService.removeProduct(customerId, productId));
+        return ResponseEntity.ok(wishListService.removeProduct(currentAccount.requireCustomerId(), productId));
     }
 }

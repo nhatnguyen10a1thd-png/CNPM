@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -17,13 +19,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewRestController {
     private final ReviewService reviewService;
+    private final CurrentAccountResolver currentAccount;
 
     @PostMapping
     public ResponseEntity<ReviewResponse> create(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @Valid @RequestBody ReviewRequest request
     ) throws Exception {
-        return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.create(customerId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.create(currentAccount.requireCustomerId(), request));
     }
 
     @GetMapping("/product/{productId}")
@@ -32,11 +35,13 @@ public class ReviewRestController {
     }
 
     @GetMapping
+    @PreAuthorize("@permissionPolicy.has('REVIEW_MANAGE')")
     public ResponseEntity<List<ReviewResponse>> getAll() {
         return ResponseEntity.ok(reviewService.getAll());
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("@permissionPolicy.has('REVIEW_MANAGE')")
     public ResponseEntity<ReviewResponse> updateModerationStatus(
             @PathVariable Long id,
             @RequestParam ReviewModerationStatus status

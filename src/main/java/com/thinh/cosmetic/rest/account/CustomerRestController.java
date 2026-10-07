@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -20,15 +22,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerRestController {
     private final CustomerService customerService;
+    private final CurrentAccountResolver currentAccount;
 
     @GetMapping
+    @PreAuthorize("@permissionPolicy.has('CUSTOMER_READ')")
     public ResponseEntity<List<CustomerResponse>> getAll() {
         return ResponseEntity.ok(customerService.getAllCustomers());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerResponse> getById(@PathVariable Long id) throws Exception {
-        return ResponseEntity.ok(customerService.getCustomerById(id));
+        return ResponseEntity.ok(customerService.getCustomerById(currentAccount.requireCustomerId()));
     }
 
     @PutMapping("/{id}/profile")
@@ -36,12 +40,12 @@ public class CustomerRestController {
             @PathVariable Long id,
             @Valid @RequestBody CustomerProfileRequest request
     ) throws Exception {
-        return ResponseEntity.ok(customerService.updateProfile(id, request));
+        return ResponseEntity.ok(customerService.updateProfile(currentAccount.requireCustomerId(), request));
     }
 
     @GetMapping("/{id}/addresses")
     public ResponseEntity<List<CustomerAddressResponse>> getAddresses(@PathVariable Long id) {
-        return ResponseEntity.ok(customerService.getAddresses(id));
+        return ResponseEntity.ok(customerService.getAddresses(currentAccount.requireCustomerId()));
     }
 
     @PostMapping("/{id}/addresses")
@@ -49,7 +53,7 @@ public class CustomerRestController {
             @PathVariable Long id,
             @Valid @RequestBody CustomerAddressRequest request
     ) throws Exception {
-        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.addAddress(id, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.addAddress(currentAccount.requireCustomerId(), request));
     }
 
     @PutMapping("/{id}/addresses/{addressId}")
@@ -58,18 +62,18 @@ public class CustomerRestController {
             @PathVariable Long addressId,
             @Valid @RequestBody CustomerAddressRequest request
     ) throws Exception {
-        return ResponseEntity.ok(customerService.updateAddress(id, addressId, request));
+        return ResponseEntity.ok(customerService.updateAddress(currentAccount.requireCustomerId(), addressId, request));
     }
 
     @DeleteMapping("/{id}/addresses/{addressId}")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id, @PathVariable Long addressId) throws Exception {
-        customerService.deleteAddress(id, addressId);
+        customerService.deleteAddress(currentAccount.requireCustomerId(), addressId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/beauty-profile")
     public ResponseEntity<BeautyProfileResponse> getBeautyProfile(@PathVariable Long id) throws Exception {
-        return ResponseEntity.ok(customerService.getBeautyProfile(id));
+        return ResponseEntity.ok(customerService.getBeautyProfile(currentAccount.requireCustomerId()));
     }
 
     @PutMapping("/{id}/beauty-profile")
@@ -77,6 +81,6 @@ public class CustomerRestController {
             @PathVariable Long id,
             @Valid @RequestBody BeautyProfileRequest request
     ) throws Exception {
-        return ResponseEntity.ok(customerService.updateBeautyProfile(id, request));
+        return ResponseEntity.ok(customerService.updateBeautyProfile(currentAccount.requireCustomerId(), request));
     }
 }

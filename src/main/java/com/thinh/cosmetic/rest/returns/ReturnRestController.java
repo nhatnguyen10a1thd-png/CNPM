@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -17,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReturnRestController {
     private final ReturnService returnService;
+    private final CurrentAccountResolver currentAccount;
 
     @PostMapping
     public ResponseEntity<ReturnRequestResponse> create(@Valid @RequestBody ReturnRequestDto request) throws Exception {
@@ -29,21 +32,23 @@ public class ReturnRestController {
     }
 
     @GetMapping
+    @PreAuthorize("@permissionPolicy.has('RETURN_MANAGE')")
     public ResponseEntity<List<ReturnRequestResponse>> getAll() {
         return ResponseEntity.ok(returnService.getAll());
     }
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<ReturnRequestResponse>> getByCustomer(@PathVariable Long customerId) {
-        return ResponseEntity.ok(returnService.getByCustomer(customerId));
+        return ResponseEntity.ok(returnService.getByCustomer(currentAccount.requireCustomerId()));
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("@permissionPolicy.has('RETURN_MANAGE')")
     public ResponseEntity<ReturnRequestResponse> updateStatus(
             @PathVariable Long id,
             @RequestParam ReturnStatus status,
-            @RequestParam(required = false, defaultValue = "1") Long employeeId
+            @RequestParam(required = false) Long employeeId
     ) throws Exception {
-        return ResponseEntity.ok(returnService.updateStatus(id, status, employeeId));
+        return ResponseEntity.ok(returnService.updateStatus(id, status, currentAccount.requireEmployeeId()));
     }
 }

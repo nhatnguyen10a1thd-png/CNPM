@@ -16,6 +16,8 @@ import com.thinh.cosmetic.service.purchase.PurchaseOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.thinh.cosmetic.security.PermissionPolicy;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,8 +35,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final ProductSkuRepository skuRepository;
     private final InventoryRepository inventoryRepository;
     private final EmployeeRepository employeeRepository;
+    private final PermissionPolicy policy;
 
     @Override
+    @PreAuthorize("@permissionPolicy.canStore('PURCHASE_MANAGE', #p0.receivingStoreId) and #p1 == @permissionPolicy.employeeId()")
     public PurchaseOrderResponse create(PurchaseOrderRequest request, Long employeeId) throws Exception {
         SupplierEntity supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new Exception("Supplier not found"));
@@ -74,6 +78,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.canPurchase('PURCHASE_MANAGE', #p0)")
     public PurchaseOrderResponse confirm(Long id) throws Exception {
         PurchaseOrderEntity po = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new Exception("Purchase Order not found: " + id));
@@ -102,6 +107,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canPurchase('PURCHASE_READ', #p0)")
     public PurchaseOrderResponse getById(Long id) throws Exception {
         PurchaseOrderEntity po = purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new Exception("Purchase Order not found: " + id));
@@ -111,7 +117,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     @Transactional(readOnly = true)
     public List<PurchaseOrderResponse> getAll() {
-        return purchaseOrderRepository.findAll().stream().map(this::toResponse).toList();
+        policy.require("PURCHASE_READ");
+        var rows = policy.isAdmin() ? purchaseOrderRepository.findAll() : purchaseOrderRepository.findByReceivingStoreIdIn(policy.storeIds());
+        return rows.stream().map(this::toResponse).toList();
     }
 
     private PurchaseOrderResponse toResponse(PurchaseOrderEntity po) {

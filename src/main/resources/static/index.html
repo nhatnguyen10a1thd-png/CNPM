@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>LUNEA · Tài khoản</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/" aria-label="LUNEA trang chính"><span aria-hidden="true">☾</span> LUNEA</a>
+    <span class="header-note">Tài khoản &amp; quản trị</span>
+    <button id="logout" class="secondary" hidden>Đăng xuất</button>
+  </header>
+  <main class="shell">
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <section id="guest" class="auth-layout">
+      <div class="intro">
+        <span class="eyebrow">CHÀO MỪNG ĐẾN LUNEA</span>
+        <h1>Một nơi để bắt đầu.</h1>
+        <p>Đăng nhập, tạo tài khoản hoặc khôi phục quyền truy cập của bạn.</p>
+        <div class="moon" aria-hidden="true">☾</div>
+        <p class="muted small">Giao diện cơ bản để kiểm thử tài khoản và quản lý nhân viên.</p>
+        <aside id="demo-accounts" hidden><h3>Tài khoản demo</h3><p class="muted small">Bấm để điền thông tin đăng nhập thử nghiệm.</p><button class="secondary" data-demo="admin">Quản trị</button> <button class="secondary" data-demo="customer">Khách hàng</button> <button class="secondary" data-demo="warehouse">Kho · CN 1</button></aside>
+      </div>
+      <div class="card auth-card">
+        <nav class="tabs" aria-label="Tài khoản">
+          <button data-auth="login" class="active">Đăng nhập</button>
+          <button data-auth="register">Đăng ký</button>
+        </nav>
+        <section id="login-view">
+          <h2>Chào bạn quay lại</h2>
+          <form id="login-form">
+            <label>Email hoặc số điện thoại<input name="identifier" required maxlength="254" autocomplete="username" placeholder="ban@example.com"></label>
+            <label>Mật khẩu<span class="password-field"><input id="login-password" name="password" type="password" required maxlength="72" autocomplete="current-password"><button type="button" data-toggle-password="login-password" aria-label="Hiện mật khẩu">Hiện</button></span></label>
+            <div class="between"><label class="check"><input name="rememberMe" type="checkbox">Ghi nhớ đăng nhập (7 ngày)</label><button type="button" class="text-button" data-auth="recovery">Quên mật khẩu?</button></div>
+            <button class="primary" type="submit">Đăng nhập</button>
+          </form>
+        </section>
+        <section id="register-view" hidden>
+          <h2>Tạo tài khoản</h2>
+          <form id="register-form">
+            <label>Họ và tên<input name="fullName" required maxlength="150" autocomplete="name"></label>
+            <label>Email<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+            <label>Số điện thoại <span class="muted">(không bắt buộc)</span><input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>
+            <label>Mật khẩu<span class="password-field"><input id="register-password" name="password" type="password" required minlength="8" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).+" autocomplete="new-password"><button type="button" data-toggle-password="register-password" aria-label="Hiện mật khẩu">Hiện</button></span></label>
+            <p class="hint">Ít nhất 8 ký tự, có chữ và số; tối đa 72 byte.</p>
+            <label>Xác nhận mật khẩu<input name="confirmPassword" type="password" required maxlength="72" autocomplete="new-password"></label>
+            <label class="check"><input name="termsAccepted" type="checkbox" required>Tôi đồng ý <button type="button" class="text-button" id="open-terms">điều khoản sử dụng</button></label>
+            <button class="primary" type="submit">Tạo tài khoản</button>
+          </form>
+        </section>
+        <section id="recovery-view" hidden>
+          <button class="text-button" data-auth="login">← Trở lại đăng nhập</button>
+          <h2>Khôi phục mật khẩu</h2>
+          <p class="muted">Nhập email hoặc số điện thoại. Liên kết được gửi đến email đã đăng ký và chỉ dùng một lần.</p>
+          <form id="recovery-form">
+            <label>Email hoặc số điện thoại<input name="identifier" required maxlength="254" autocomplete="username"></label>
+            <button class="primary" type="submit">Gửi liên kết khôi phục</button>
+          </form>
+          <aside id="demo-inbox" class="demo-inbox" hidden>
+            <h3>Hộp thư thử nghiệm cục bộ</h3>
+            <p class="muted small">Chỉ xuất hiện ở chế độ demo trên máy này. Mở thư để thử đặt lại mật khẩu.</p>
+            <button class="secondary" id="refresh-inbox">Làm mới hộp thư</button>
+            <div id="inbox-messages"></div>
+          </aside>
+        </section>
+        <section id="reset-view" hidden>
+          <h2>Đặt lại mật khẩu</h2>
+          <p class="muted">Nhập mật khẩu mới. Sau khi hoàn tất, hãy đăng nhập lại.</p>
+          <form id="reset-form">
+            <label>Mật khẩu mới<span class="password-field"><input id="reset-password" name="password" type="password" required minlength="8" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).+" autocomplete="new-password"><button type="button" data-toggle-password="reset-password" aria-label="Hiện mật khẩu">Hiện</button></span></label>
+            <p class="hint">Ít nhất 8 ký tự, có chữ và số; tối đa 72 byte.</p>
+            <label>Xác nhận mật khẩu<input name="confirmPassword" type="password" required maxlength="72" autocomplete="new-password"></label>
+            <button class="primary" type="submit">Lưu mật khẩu mới</button>
+          </form>
+          <button class="text-button" data-auth="recovery">Yêu cầu liên kết mới</button>
+        </section>
+      </div>
+    </section>
+    <section id="workspace" hidden>
+      <nav class="tabs workspace-tabs" aria-label="Điều hướng">
+        <button class="active" data-workspace="account">Tài khoản</button>
+        <button id="staff-tab" data-workspace="staff" hidden>Nhân viên</button>
+        <button id="roles-tab" data-workspace="roles" hidden>Vai trò &amp; quyền</button>
+      </nav>
+      <section id="account-view" class="card">
+        <div class="between"><div><span class="eyebrow">PHIÊN ĐĂNG NHẬP HIỆN TẠI</span><h1 id="account-name">Tài khoản</h1></div><button class="secondary" id="refresh-session">Làm mới</button></div>
+        <dl id="account-info" class="account-info"></dl>
+        <p class="muted">Quyền và chi nhánh được kiểm tra ở máy chủ cho mỗi thao tác.</p>
+        <section id="scope-panel" hidden class="scope-panel">
+          <h3>Kiểm tra truy cập chi nhánh</h3>
+          <p class="muted">Nhập mã chi nhánh để đọc tồn kho. Thao tác cần quyền tồn kho và phạm vi chi nhánh tương ứng.</p>
+          <form id="scope-form" class="inline-form"><label>Mã chi nhánh<input name="storeId" type="number" min="1" required></label><button class="secondary" type="submit">Kiểm tra quyền truy cập</button></form>
+          <p id="scope-result" role="status"></p>
+        </section>
+      </section>
+      <section id="staff-view" hidden class="card">
+        <div class="between"><div><span class="eyebrow">QUẢN TRỊ</span><h1>Nhân viên</h1></div><button class="primary compact" id="add-employee">Thêm nhân viên</button></div>
+        <form id="staff-search" class="inline-form"><label>Tìm nhân viên<input name="keyword" placeholder="Tên, email hoặc số điện thoại" maxlength="150"></label><button class="secondary" type="submit">Tìm kiếm</button></form>
+        <div class="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>Vai trò</th><th>Chi nhánh</th><th>Thao tác</th></tr></thead><tbody id="employee-rows"></tbody></table></div>
+        <div class="between pager"><span id="page-info" class="muted"></span><div><button id="prev-page" class="secondary">Trước</button> <button id="next-page" class="secondary">Sau</button></div></div>
+      </section>
+      <section id="roles-view" hidden class="card">
+        <span class="eyebrow">PHÂN QUYỀN</span><h1>Vai trò &amp; quyền</h1>
+        <p class="muted">Chọn vai trò và những quyền được phép. Vai trò ADMIN được bảo vệ.</p>
+        <form id="role-form"><label>Vai trò<select id="role-select" name="roleId" required></select></label><fieldset id="permission-options"><legend>Quyền chức năng</legend></fieldset><button class="primary compact" id="save-role" type="submit">Lưu quyền</button></form>
+      </section>
+    </section>
+  </main>
+  <dialog id="employee-dialog">
+    <div class="between"><h2 id="employee-title">Thêm nhân viên</h2><button id="close-employee" class="text-button" aria-label="Đóng">✕</button></div>
+    <p id="employee-error" class="form-error" role="alert" hidden></p>
+    <form id="employee-form">
+      <div class="form-grid"><label>Họ và tên<input name="fullName" required maxlength="150"></label><label>Email đăng nhập<input name="email" type="email" required maxlength="254"></label><label>Email nội bộ <span class="muted">(không bắt buộc)</span><input name="internalEmail" type="email" maxlength="254"></label><label>Số điện thoại<input name="phone" type="tel" maxlength="30"></label><label>Mật khẩu<input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password"><span class="hint" id="employee-password-hint">Ít nhất 8 ký tự, có chữ và số.</span></label><label>Trạng thái<select name="status"><option value="ACTIVE">Đang hoạt động</option><option value="INACTIVE">Ngừng hoạt động</option></select></label></div>
+      <fieldset id="employee-role-options"><legend>Vai trò</legend></fieldset>
+      <fieldset id="employee-store-options"><legend>Chi nhánh</legend></fieldset>
+      <label>Chi nhánh chính<select id="primary-store" name="primaryStoreId"><option value="">Không có</option></select></label>
+      <div class="dialog-actions"><button class="secondary" id="cancel-employee" type="button">Hủy</button><button class="primary compact" type="submit">Lưu nhân viên</button></div>
+    </form>
+  </dialog>
+  <dialog id="terms-dialog"><h2>Điều khoản sử dụng</h2><p>Bạn đồng ý cung cấp thông tin tài khoản chính xác và bảo mật thông tin đăng nhập. Chỉ sử dụng tài khoản trong phạm vi quyền được cấp.</p><p>Đây là bản ứng dụng dùng để kiểm thử các chức năng cơ bản.</p><button id="close-terms" class="primary compact">Đã hiểu</button></dialog>
+  <footer>LUNEA · Tài khoản · Nhân viên · Phân quyền</footer>
+</body>
+</html>

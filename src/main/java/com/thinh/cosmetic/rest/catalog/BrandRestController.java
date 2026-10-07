@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class BrandRestController {
     private final BrandService brandService;
 
     @PostMapping
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<BrandResponse> create(
             @Valid @RequestBody BrandRequest request
     ) throws Exception {
@@ -43,6 +45,7 @@ public class BrandRestController {
     }
 
     @PutMapping(path = "/{id}")
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<BrandResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody BrandRequest request
@@ -53,6 +56,7 @@ public class BrandRestController {
     }
 
     @DeleteMapping(path = "/{id}")
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<Void> delete(
             @PathVariable Long id
     ) throws Exception {

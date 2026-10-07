@@ -10,6 +10,7 @@ import com.thinh.cosmetic.service.store.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.thinh.cosmetic.security.PermissionPolicy;
 
 import java.util.List;
 
@@ -19,9 +20,12 @@ import java.util.List;
 public class StoreServiceImpl implements StoreService {
     private final StoreRepository storeRepository;
     private final StoreMapper storeMapper;
+    private final PermissionPolicy policy;
 
     @Override
     public StoreResponse create(StoreRequest request) {
+        policy.require("STORE_MANAGE");
+        if (!policy.isAdmin()) throw PermissionPolicy.denied();
         StoreEntity store = storeMapper.toEntity(request);
         if (store.getStatus() == null) store.setStatus(ActiveStatus.ACTIVE);
         return storeMapper.toResponse(storeRepository.save(store));
@@ -30,6 +34,7 @@ public class StoreServiceImpl implements StoreService {
     @Override
     @Transactional(readOnly = true)
     public StoreResponse getById(Long id) throws Exception {
+        if (!policy.has("EMPLOYEE_MANAGE")) policy.requireStore("STORE_READ", id);
         return storeMapper.toResponse(storeRepository.findById(id)
                 .orElseThrow(() -> new Exception("Store not found: " + id)));
     }
@@ -37,11 +42,15 @@ public class StoreServiceImpl implements StoreService {
     @Override
     @Transactional(readOnly = true)
     public List<StoreResponse> getAll() {
-        return storeRepository.findAll().stream().map(storeMapper::toResponse).toList();
+        boolean assignmentLookup = policy.has("EMPLOYEE_MANAGE");
+        if (!assignmentLookup) policy.require("STORE_READ");
+        var stores = assignmentLookup || policy.isAdmin() ? storeRepository.findAll() : storeRepository.findAllById(policy.storeIds());
+        return stores.stream().map(storeMapper::toResponse).toList();
     }
 
     @Override
     public StoreResponse update(Long id, StoreRequest request) throws Exception {
+        policy.requireStore("STORE_MANAGE", id);
         StoreEntity store = storeRepository.findById(id)
                 .orElseThrow(() -> new Exception("Store not found: " + id));
         storeMapper.updateEntity(request, store);
@@ -50,6 +59,7 @@ public class StoreServiceImpl implements StoreService {
 
     @Override
     public void deactivate(Long id) throws Exception {
+        policy.requireStore("STORE_MANAGE", id);
         StoreEntity store = storeRepository.findById(id)
                 .orElseThrow(() -> new Exception("Store not found: " + id));
         store.setStatus(ActiveStatus.INACTIVE);

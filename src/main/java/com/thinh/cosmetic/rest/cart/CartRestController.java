@@ -7,50 +7,53 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
 public class CartRestController {
     private final CartService cartService;
+    private final CurrentAccountResolver currentAccount;
 
     @GetMapping
     public ResponseEntity<CartResponse> getCart(
-            @RequestParam(required = false, defaultValue = "1") Long customerId
+            @RequestParam(required = false) Long customerId
     ) throws Exception {
-        return ResponseEntity.ok(cartService.getCart(customerId));
+        return ResponseEntity.ok(cartService.getCart(currentAccount.requireCustomerId()));
     }
 
     @PostMapping("/items")
     public ResponseEntity<CartResponse> addItem(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @Valid @RequestBody CartItemRequest request
     ) throws Exception {
-        return ResponseEntity.ok(cartService.addItem(customerId, request));
+        return ResponseEntity.ok(cartService.addItem(currentAccount.requireCustomerId(), request));
     }
 
     @PutMapping("/items/{cartItemId}")
     public ResponseEntity<CartResponse> updateItemQuantity(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @PathVariable Long cartItemId,
             @RequestParam Integer quantity
     ) throws Exception {
-        return ResponseEntity.ok(cartService.updateItemQuantity(customerId, cartItemId, quantity));
+        return ResponseEntity.ok(cartService.updateItemQuantity(currentAccount.requireCustomerId(), cartItemId, quantity));
     }
 
     @DeleteMapping("/items/{cartItemId}")
     public ResponseEntity<CartResponse> removeItem(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @PathVariable Long cartItemId
     ) throws Exception {
-        return ResponseEntity.ok(cartService.removeItem(customerId, cartItemId));
+        return ResponseEntity.ok(cartService.removeItem(currentAccount.requireCustomerId(), cartItemId));
     }
 
     @DeleteMapping
     public ResponseEntity<Void> clearCart(
-            @RequestParam(required = false, defaultValue = "1") Long customerId
+            @RequestParam(required = false) Long customerId
     ) throws Exception {
-        cartService.clearCart(customerId);
+        cartService.clearCart(currentAccount.requireCustomerId());
         return ResponseEntity.noContent().build();
     }
 }

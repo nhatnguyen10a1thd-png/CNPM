@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -28,8 +29,9 @@ public class EmployeeRestController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EmployeeResponse>> getAll() {
-        return ResponseEntity.ok(employeeService.getAll());
+    public ResponseEntity<Page<EmployeeResponse>> getAll(@RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(employeeService.search(keyword, page, size));
     }
 
     @PutMapping("/{id}")

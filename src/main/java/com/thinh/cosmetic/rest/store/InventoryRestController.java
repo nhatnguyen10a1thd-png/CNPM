@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryRestController {
     private final InventoryService inventoryService;
+    private final CurrentAccountResolver currentAccount;
 
     @GetMapping("/store/{storeId}")
     public ResponseEntity<List<InventoryResponse>> getByStore(@PathVariable Long storeId) {
@@ -37,9 +39,9 @@ public class InventoryRestController {
     @PostMapping("/adjust")
     public ResponseEntity<InventoryResponse> adjustStock(
             @Valid @RequestBody InventoryAdjustmentRequest request,
-            @RequestParam(required = false, defaultValue = "1") Long employeeId
+            @RequestParam(required = false) Long employeeId
     ) throws Exception {
-        return ResponseEntity.ok(inventoryService.adjustStock(request, employeeId));
+        return ResponseEntity.ok(inventoryService.adjustStock(request, currentAccount.requireEmployeeId()));
     }
 
     @GetMapping("/store/{storeId}/sku/{skuId}/available")

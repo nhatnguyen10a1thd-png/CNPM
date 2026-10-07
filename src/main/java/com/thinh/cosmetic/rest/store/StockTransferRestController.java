@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
 
 import java.util.List;
 
@@ -16,13 +17,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StockTransferRestController {
     private final StockTransferService stockTransferService;
+    private final CurrentAccountResolver currentAccount;
 
     @PostMapping
     public ResponseEntity<StockTransferResponse> create(
             @Valid @RequestBody StockTransferRequest request,
-            @RequestParam(required = false, defaultValue = "1") Long employeeId
+            @RequestParam(required = false) Long employeeId
     ) throws Exception {
-        return ResponseEntity.status(HttpStatus.CREATED).body(stockTransferService.create(request, employeeId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(stockTransferService.create(request, currentAccount.requireEmployeeId()));
     }
 
     @GetMapping("/{id}")

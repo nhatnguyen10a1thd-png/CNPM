@@ -24,6 +24,15 @@ public class AuditLogEntity {
 
     private String performedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    private EmployeeEntity employee;
+
+    private String objectType;
+    private String objectId;
+    private String ipAddress;
+
+    @Column(columnDefinition = "text")
     private String details;
 
     @CreationTimestamp

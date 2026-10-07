@@ -12,6 +12,8 @@ import com.thinh.cosmetic.service.store.StockTransferService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.thinh.cosmetic.security.PermissionPolicy;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,8 +29,10 @@ public class StockTransferServiceImpl implements StockTransferService {
     private final ProductSkuRepository skuRepository;
     private final InventoryRepository inventoryRepository;
     private final EmployeeRepository employeeRepository;
+    private final PermissionPolicy policy;
 
     @Override
+    @PreAuthorize("@permissionPolicy.canStore('TRANSFER_MANAGE', #p0.sourceStoreId) and @permissionPolicy.canStore('TRANSFER_MANAGE', #p0.destinationStoreId) and #p1 == @permissionPolicy.employeeId()")
     public StockTransferResponse create(StockTransferRequest request, Long employeeId) throws Exception {
         StoreEntity source = storeRepository.findById(request.getSourceStoreId())
                 .orElseThrow(() -> new Exception("Source store not found"));
@@ -60,6 +64,7 @@ public class StockTransferServiceImpl implements StockTransferService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.canTransfer('TRANSFER_MANAGE', #p0)")
     public StockTransferResponse confirmShipment(Long id) throws Exception {
         StockTransferEntity transfer = stockTransferRepository.findById(id)
                 .orElseThrow(() -> new Exception("Transfer not found: " + id));
@@ -84,6 +89,7 @@ public class StockTransferServiceImpl implements StockTransferService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.canTransfer('TRANSFER_MANAGE', #p0)")
     public StockTransferResponse confirmReceipt(Long id) throws Exception {
         StockTransferEntity transfer = stockTransferRepository.findById(id)
                 .orElseThrow(() -> new Exception("Transfer not found: " + id));
@@ -112,6 +118,7 @@ public class StockTransferServiceImpl implements StockTransferService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canTransfer('TRANSFER_READ', #p0)")
     public StockTransferResponse getById(Long id) throws Exception {
         StockTransferEntity transfer = stockTransferRepository.findById(id)
                 .orElseThrow(() -> new Exception("Transfer not found: " + id));
@@ -121,7 +128,9 @@ public class StockTransferServiceImpl implements StockTransferService {
     @Override
     @Transactional(readOnly = true)
     public List<StockTransferResponse> getAll() {
-        return stockTransferRepository.findAll().stream().map(this::toResponse).toList();
+        policy.require("TRANSFER_READ");
+        var rows = policy.isAdmin() ? stockTransferRepository.findAll() : stockTransferRepository.findBySourceStoreIdInAndDestinationStoreIdIn(policy.storeIds(), policy.storeIds());
+        return rows.stream().map(this::toResponse).toList();
     }
 
     private StockTransferResponse toResponse(StockTransferEntity t) {

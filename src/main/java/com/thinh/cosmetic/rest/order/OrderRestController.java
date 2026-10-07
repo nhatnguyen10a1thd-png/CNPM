@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.thinh.cosmetic.security.CurrentAccountResolver;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -17,13 +19,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderRestController {
     private final OrderService orderService;
+    private final CurrentAccountResolver currentAccount;
 
     @PostMapping
     public ResponseEntity<OrderResponse> placeOrder(
-            @RequestParam(required = false, defaultValue = "1") Long customerId,
+            @RequestParam(required = false) Long customerId,
             @Valid @RequestBody OrderRequest request
     ) throws Exception {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(customerId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(currentAccount.requireCustomerId(), request));
     }
 
     @GetMapping("/{id}")
@@ -33,15 +36,17 @@ public class OrderRestController {
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<OrderResponse>> getByCustomer(@PathVariable Long customerId) {
-        return ResponseEntity.ok(orderService.getByCustomer(customerId));
+        return ResponseEntity.ok(orderService.getByCustomer(currentAccount.requireCustomerId()));
     }
 
     @GetMapping
+    @PreAuthorize("@permissionPolicy.has('ORDER_READ')")
     public ResponseEntity<List<OrderResponse>> getAll() {
         return ResponseEntity.ok(orderService.getAll());
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("@permissionPolicy.has('ORDER_MANAGE')")
     public ResponseEntity<OrderResponse> updateStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status
@@ -52,8 +57,8 @@ public class OrderRestController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<OrderResponse> cancelOrder(
             @PathVariable Long id,
-            @RequestParam(required = false, defaultValue = "1") Long customerId
+            @RequestParam(required = false) Long customerId
     ) throws Exception {
-        return ResponseEntity.ok(orderService.cancelOrder(id, customerId));
+        return ResponseEntity.ok(orderService.cancelOrder(id, currentAccount.requireCustomerId()));
     }
 }
