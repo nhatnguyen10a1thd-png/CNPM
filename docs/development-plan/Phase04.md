@@ -27,9 +27,10 @@ Trạng thái mô tả là baseline audit2026-10-07; phải đọc source và re
 
 - [x] Phase02 identity/hash/status và deny-default boundary đã implemented và tested local; trạng thái triển khai xem report Phase02.
 - [x] D01/D02 được ghi theo yêu cầu hoàn thiện Phase01–04 và UI cơ bản: static HTML/JS cùng origin, session + CSRF, permission matrix, login email và internalEmail riêng.
-- [ ] PostgreSQL test baseline và demo bootstrap đã verified; kiểm kê roles/store/account và áp dụng migration trên database hiện hữu còn chờ. Không reset dữ liệu hoặc seed mật khẩu mặc định production.
+- [x] PostgreSQL test baseline và demo bootstrap đã verified trên database test riêng; không suy thành migration/deployment.
+- [ ] Kiểm kê roles/store/account và áp dụng migration trên database hiện hữu còn chờ. Không reset dữ liệu hoặc seed mật khẩu mặc định production.
 - [x] D01/D02 và phạm vi quyền được ghi trong [Decision Register](01_MASTER_ROADMAP.md#decision-register), [STAFF_ACCESS](../STAFF_ACCESS.md) và report tổng.
-- [ ] Working tree đã kiểm tra; database hiện hữu chưa truy cập để kiểm kê. Chỉ tạo môi trường test riêng; không reset DB hiện hữu.
+- [x] Working tree đã kiểm tra tại đầu phiên04; giữ các thay đổi của phiên01–03 đã có. Mutation tests chỉ dùng môi trường test riêng, không reset DB hiện hữu.
 
 ## 5. Scope
 
@@ -242,6 +243,7 @@ IMPLEMENTED_AND_TESTED_LOCAL
 - PermissionCatalog định nghĩa ADMIN và chín actor QLSP/QLCH/QLNH/QLTK/QLKH/QLDH/QLKM/QLNV/BCTK. PermissionPolicy lấy grants/scope mới từ DB mỗi request, kiểm tra employee/account ACTIVE và principal binding/version.
 - Method guards và bounded queries bảo vệ store/inventory/purchase/transfer. Transfers cần scope của cả source và destination. Global catalog/supplier/voucher dùng permissions tương ứng.
 - QLNV quản trị nhân viên thông thường; ADMIN quản trị role grants. Reserved ADMIN grants bất biến, ROLE_MANAGE không cấp sang role khác; chặn self role/scope/status edits, self-deactivation và QLNV sửa/cấp quyền cho privileged employee.
+- Contract hiện hành đã có trước phiên04: kể cả ADMIN cũng không tạo/gán ADMIN thứ hai qua staff API; ADMIN ban đầu là bootstrap một lần. Đã đối chiếu source và STAFF_ACCESS, không thay policy này.
 - Pessimistic ADMIN-role lock và last-active-admin safeguard đã có trong code. Không tuyên bố đã chạy concurrent employee-create hoặc concurrent last-admin mutation test.
 - AuditWriter tham gia transaction MANDATORY; employee create/update/deactivate và role-permission changes ghi actor từ principal, action/object/time/details/IP. IP dùng remoteAddr, bỏ qua forwarding header giả. Audit failure rollback cả employee creation và role grant replacement.
 - Deactivate khóa account, tăng credentialsVersion, invalidates old session ở request kế tiếp; giữ employee/grants/history. Role/store revoke/grant có hiệu lực trên session hiện tại.
@@ -318,8 +320,8 @@ Không dùng database developer đang có dữ liệu để vượt test gate: P
 ## Known Issues
 
 - Developer/deployed database chưa được kiểm kê; trạng thái duplicate/null/legacy staff/account/status/grants trên database đó chưa biết. V001 phải qua preflight/backup/review trước áp dụng.
-- Twelve staff integration tests kiểm chứng duplicate error, không có concurrent employee-create race test riêng. ADMIN lock/last-admin safeguards có code nhưng chưa có concurrent lockout stress test.
-- Browser smoke chưa bao phủ exhaustive pagination navigation hoặc mọi empty role/store reference state.
+- Staff suite hiện có21 tests; concurrent employee-create đã pass trên H2/PostgreSQL test riêng. ADMIN lock/last-admin safeguards có code nhưng chưa có concurrent last-admin lockout stress test; không dùng duplicate-create race để suy ra stress acceptance.
+- Browser phiên04 đã kiểm chứng next/previous paging và empty employee search; mọi empty role/store reference state chưa được kiểm chứng bằng dữ liệu thực.
 - Later customer/order/return/review/cart services còn domain gaps và routes bị đóng; permission code không chứng minh consumer workflow đã complete.
 - Audit queries/report UI và event registration cho domain mutations khác thuộc Phase sau.
 
@@ -327,7 +329,7 @@ Không dùng database developer đang có dữ liệu để vượt test gate: P
 
 - Kiểm kê/reconcile database hiện hữu, review và áp dụng V001 bằng runbook; kiểm chứng validate startup/session/grants sau migration trên environment đó.
 - Consumer Phases dùng PermissionPolicy/AuditWriter và bổ sung ownership/branch scope/business rules trước enable routes.
-- Dedicated concurrent employee-create/last-admin mutation tests và full UI edge-state suite cần bổ sung trước claim production/concurrency acceptance.
+- Concurrent last-admin mutation stress và empty role/store reference states còn cần kiểm chứng trước claim production/full UI edge-state acceptance. Duplicate employee-create race đã có evidence phiên04.
 
 ## Verification Result
 
@@ -339,6 +341,48 @@ Ngày 2026-10-07, JDK21:
 - Staff suite có: supplied BCrypt credential + primary/audit principal/IP, invalid/duplicate link no-write, invalid update giữ links/identity, missing password/duplicate409, anonymous/customer/nonmanager denial, QLNV ADMIN/self-escalation guards, REST/direct-service crossbranch, live grant/revoke/composite IDs, scoped purchase/transfer lists/IDs, deactivate old-session/history, audit rollback employee/grants và typed empty page/reserved ADMIN.
 - Không dùng PASS test-schema để claim migration/deployed legacy inventory hoặc concurrent employee mutation đã verified. Verification migration V001 local riêng đang được tổng hợp ở report Phase01; applied-to-existing-database vẫn pending.
 
+### Phiên04 — tái kiểm chứng và hoàn thiện gap ngày 2026-10-08
+
+Status phần gap tìm thấy: **COMPLETED**. Giữ status toàn Phase **IMPLEMENTED_AND_TESTED_LOCAL**; không nâng thành deployed/production completion. Không có gate D01/D02 mới. Dependency Phase02 đã có BCrypt, employee principal không cần Customer, session/CSRF, ACTIVE/version revocation và deny-default; auth14 được regression trong cả hai suite mới. Supabase schema mới/app local trong report tổng không chứng minh dữ liệu legacy đã migrate. Phiên này không đọc production.env, không truy cập/mutation Supabase, không migrate DB cũ.
+
+**Current State đối chiếu trước sửa:** đã đọc AGENTS ở các ancestor và trong repo (không tìm thấy), toàn Phase04/Audit/Master, report cập nhật01–03, Phase02 Completion Report, STAFF_ACCESS và các Files To Inspect First. Đọc DOCX OOXML: bảng11, UC82–86 tại99–103, QLNV-QĐ1–5, bảng109/139–145; UC87 chỉ dùng xác định writer/query ownership. DOCX là yêu cầu tham chiếu. CRUD/search/paging/deactivate, prevalidation, composite IDs, fresh grants/scope và audit writer đã tồn tại; không dựng lại baseline. Tìm thấy một gap: Product/Category/Brand mutations, Supplier và Voucher có controller permission guards nhưng Spring services chưa có, cho phép direct service bypass. Test tái hiện trước sửa fail ở cả21 thao tác. Report04 cũng thiếu contract ADMIN thứ hai đã có trong source/STAFF_ACCESS; chỉ cập nhật tài liệu.
+
+**Work/files:** thêm `@PreAuthorize` vào21 operations của `service/catalog/impl/{Product,Category,Brand}ServiceImpl.java`, `service/purchase/impl/SupplierServiceImpl.java`, `service/order/impl/VoucherServiceImpl.java`; tái sử dụng PermissionPolicy. Thêm8 tests vào `StaffAuthorizationIntegrationTest.java` (13→21), `scripts/verify-phase04-browser.{py,js}` và `scripts/verify-phase04-http.py`. Cập nhật Phase04/report tổng/STAFF_ACCESS/Audit/Master. Các thay đổi UI/auth/recovery/foundation của phiên trước được giữ nguyên, không nhận là implementation phiên04.
+
+**DB/routes/UI/decisions:** không đổi schema/entity/composite PK/migration, request/response, routes hoặc matrix. Global services kiểm tra permission ở server; public catalog GET giữ contract hiện hành, không thêm store FK cho global data. Giữ single initial ADMIN, reserved grants, ROLE_MANAGE riêng ADMIN, self/privileged guards và ADMIN branch bypass sau permission check. UI nhân viên/grants đã có, source UI không sửa; chỉ kiểm chứng DOM/API và visual. Không thêm audit-query27, attribute/SKU/business CRUD05+ hay mở customer routes. Exact consumer routes và quyền tại [STAFF_ACCESS](../STAFF_ACCESS.md#existing-routes-for-consumer-phases).
+
+**Verification mới, Java21.0.10/Maven3.9.16/Python3.13.7/Edge154.0.4258.62:**
+
+```powershell
+$env:JAVA_HOME='C:/Program Files/Java/jdk-21.0.10'
+.\mvnw.cmd -o test '-Dtest=StaffAuthorizationIntegrationTest#globalServicesCannotBypassControllerPermissions' '-Dlogging.level.org.hibernate.SQL=OFF'
+.\mvnw.cmd -o test '-Dlogging.level.root=WARN' '-Dlogging.level.org.hibernate.SQL=OFF'
+$env:TEST_DB_URL='jdbc:postgresql://127.0.0.1:15434/phase04_test'
+$env:TEST_DB_USERNAME='phase04_test'
+$env:TEST_DB_PASSWORD=''
+.\mvnw.cmd -o test '-Dspring.profiles.active=test-postgres' '-Dspring.jpa.hibernate.ddl-auto=create' '-Dlogging.level.root=WARN' '-Dlogging.level.org.hibernate.SQL=OFF'
+.\mvnw.cmd -o package -DskipTests
+py scripts/verify-phase04-http.py
+py scripts/verify-phase04-browser.py
+```
+
+- Baseline hiện tại H2 **61/61 PASS**, `target/phase04-h2-before.log`. Reproducer trước source fix: **1 test FAIL,21 bypass assertions fail**, `target/phase04-rbac-before.log`.
+- Sau sửa: H2 **69/69 PASS**, PostgreSQL16.15 **69/69 PASS**, đều0 failures/errors/skipped; staff **21/21**, auth14/recovery17/foundation/existing9 giữ nguyên. Logs `target/phase04-h2-final.log`, `target/phase04-postgres.log`. PostgreSQL cluster mới `.local/phase04/pgdata`, trust chỉ loopback15434, DB/user `phase04_test`; không dùng cluster/DB cũ. Explicit `create` chỉ trên DB mới này để giữ fixture cho HTTP. Default test-postgres vẫn create-drop và guard `_test` hiện hành.
+- Package **BUILD SUCCESS**, `target/phase04-package.log`. Jar này chạy bằng `Start-Process -WindowStyle Hidden`: demo `--spring.profiles.active=demo --server.port=18084` (H2 in-memory); app default `--server.address=127.0.0.1 --server.port=18085 --spring.datasource.url=jdbc:postgresql://127.0.0.1:15434/phase04_test --spring.datasource.username=phase04_test --spring.datasource.password= --spring.jpa.hibernate.ddl-auto=validate`. Cả hai thêm `--logging.level.root=WARN --logging.level.org.hibernate.SQL=OFF`. Chờ app ready trước chạy scripts; HTTP script dùng staff fixture của suite, không bootstrap ADMIN production.
+- Default-profile PostgreSQL HTTP **18/18 PASS**, `target/phase04-http.log`: CSRF/anonymous deny, employee login/CRUD/search/page, role grant/revoke trên phiên cũ, branch403, second ADMIN/reserved/self guards, actor/IP audit kiểm tra trực tiếp DB, deactivate revoke và history. Customer API403 chỉ chứng minh boundary, không chứng minh customer workflow hoàn thiện.
+- Edge DOM/browser demo H2 **28/28 PASS**, `target/phase04-browser.log`: create/edit/password preservation/duplicate error/loading, assignment/primary, next/previous page, empty search, UI grant revoke/restore, ADMIN grant lock, staff control visibility với server403, assigned/unassigned scope, deactivate/login denial. Visual desktop1280 và mobile390 đã đọc tại `target/phase04-browser/{staff,roles}-{1280,390}.png`; bảng nhân viên scroll ngang trong table wrapper, page không tràn ngang.
+- Lần browser đầu28 checkpoints pass nhưng exit1 do Edge launcher để process con giữ profile (`target/phase04-browser-first.log`); runner đã đóng process theo đúng fresh profile, chạy lại demo mới và có exit0. Lần khởi chạy sớm trước app ready/HTTP fixture ordinal sai chỉ là lỗi harness đã sửa; source giữ INACTIVE=0/ACTIVE=1. Test audit flush đầu dùng Mockito callRealMethod trên interface không hợp lệ; đã thay bằng EntityManager persist/flush thật, xác nhận PersistenceException và rollback, không dùng failure harness làm evidence database.
+- P04-T01–03/T05–12 có REST/direct-service và/hoặc HTTP/browser evidence theo phạm vi trên. P04-T04: hai REST creates đồng thời nhận đúng201/409; chỉ một identity, employee/link set và audit. Audit runtime failure create/grants rollback vẫn pass; lỗi ghi audit thực do oversized action trên test DB rollback profile/password/version/role/store update và deactivate. Composite save/find/delete, invalid full association sets, stale principal binding/version, live scope grant/revoke, ADMIN permission AND scope đều pass.
+
+**Deviations/known issues/remaining:** browser dùng installed Edge headless/CDP theo runner hiện hữu vì runtime sandbox không khởi tạo được; chỉ profile mới, không user browser. Không thêm recommendation business policy hay đổi decision/dependency. Legacy inventory/reconciliation/V001 còn **UNVERIFIED**; test ORM schema/HTTP không chứng minh migration. Last-admin concurrency stress, mọi empty role/store lists, deployed HTTPS và production acceptance chưa claim. Dừng tại04; môi trường test được đóng sau verification.
+
+- [x] Sửa gap controller-only global permission tại managed service, không đổi matrix/business workflow.
+- [x] Kiểm chứng prevalidation/full association sets/composite ID và audit mandatory rollback.
+- [x] Kiểm chứng single ADMIN/self/privileged guards, permission AND scope trên REST và direct service.
+- [x] Java21/H2/PostgreSQL, default-profile HTTP và browser paging/empty search có evidence mới riêng.
+- [ ] Inventory/migration dữ liệu legacy và acceptance môi trường deployed.
+- [ ] Concurrent last-admin stress và browser empty role/store reference states.
+
 ## Notes For Next Phase
 
 Reuse CurrentAccountResolver và PermissionPolicy; actor IDs từ request không phải identity. Scope chỉ cho entities gắn store, không thêm store FK cho catalog/supplier/customer. PermissionPolicy current validates account/employee binding/version; fresh grants/store IDs có hiệu lực cho session cũ.
@@ -346,3 +390,5 @@ Reuse CurrentAccountResolver và PermissionPolicy; actor IDs từ request không
 AuditWriter.write(action, objectType, objectId, details) bắt buộc gọi trong transaction admin/domain hiện hữu; audit failure rollback khi mandatory. Không đưa passwords/recovery secrets vào details. Phase27 dùng existing employee/object/IP/legacy performedBy model; không tạo writer khác.
 
 Đọc [STAFF_ACCESS](../STAFF_ACCESS.md), [report tổng](../PHASE_01_04_REPORT.md) và [database runbook](../database/README.md) trước mở thêm routes. Trạng thái local implementation đã có evidence; deployment/migration còn phải hoàn tất theo môi trường thực tế.
+
+Phase05 có thể tiếp tục phần độc lập trên DB test với auth/RBAC/audit capability đã tồn tại; dùng managed Spring services và fresh PermissionPolicy, giữ public reads/mutation CATALOG_MANAGE/global scope contract. D04 taxonomy/schema và phần D16 vocabulary cần quyết định đúng phạm vi trước phụ thuộc tương ứng; không coi05 đã được chạy. Trước triển khai trên dữ liệu cũ phải inventory/reconcile/backup/migrate theo runbook. Consumer đăng ký audit events trong transaction của mình và bảo vệ ownership/scope trước mở route; writer04 không hoàn thiện domain workflow thay consumer.

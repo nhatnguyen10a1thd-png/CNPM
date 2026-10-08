@@ -13,6 +13,12 @@ import com.thinh.cosmetic.repository.store.StockTransferRepository;
 import com.thinh.cosmetic.repository.purchase.PurchaseOrderRepository;
 import com.thinh.cosmetic.repository.purchase.SupplierRepository;
 import com.thinh.cosmetic.service.account.EmployeeService;
+import com.thinh.cosmetic.service.account.RoleGrantService;
+import com.thinh.cosmetic.service.catalog.ProductService;
+import com.thinh.cosmetic.service.catalog.CategoryService;
+import com.thinh.cosmetic.service.catalog.BrandService;
+import com.thinh.cosmetic.service.purchase.SupplierService;
+import com.thinh.cosmetic.service.order.VoucherService;
 import com.thinh.cosmetic.service.store.InventoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +34,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,7 +64,15 @@ class StaffAuthorizationIntegrationTest {
     @Autowired SupplierRepository suppliers;
     @Autowired PasswordEncoder encoder;
     @Autowired EmployeeService employeeService;
+    @Autowired RoleGrantService roleGrantService;
+    @Autowired PermissionPolicy policy;
+    @Autowired jakarta.persistence.EntityManager entityManager;
     @Autowired InventoryService inventoryService;
+    @Autowired ProductService productService;
+    @Autowired CategoryService categoryService;
+    @Autowired BrandService brandService;
+    @Autowired SupplierService supplierService;
+    @Autowired VoucherService voucherService;
     @MockitoSpyBean AutditLogRepository auditLogs;
     private static final String PASSWORD = "StaffPass123";
 
@@ -95,6 +113,228 @@ class StaffAuthorizationIntegrationTest {
                 .internalEmail(employee.getInternalEmail()).status(employee.getStatus()).roleIds(roleIds).storeIds(List.of()).build();
     }
     private String body(Object value) { return json.writeValueAsString(value); }
+
+    private void as(EmployeeEntity actor) {
+        SecurityContextHolder.setContext((org.springframework.security.core.context.SecurityContext)
+                session(actor).getAttribute("SPRING_SECURITY_CONTEXT"));
+    }
+
+    @Test
+    void globalServicesAllowTheirPermissionsWithoutBranchAssignmentsAndKeepPublicReads() throws Exception {
+        var worker = employee(customRole("CATALOG_MANAGE", "SUPPLIER_READ", "SUPPLIER_MANAGE", "PROMOTION_READ", "PROMOTION_MANAGE"));
+        as(worker);
+        try {
+            var brandRequest = com.thinh.cosmetic.domain.dto.request.catalog.BrandRequest.builder().name("RBAC brand").status(ActiveStatus.ACTIVE).build();
+            var categoryRequest = com.thinh.cosmetic.domain.dto.request.catalog.CategoryRequest.builder().name("RBAC category").status(ActiveStatus.ACTIVE).build();
+            var brand = brandService.create(brandRequest);
+            var category = categoryService.create(categoryRequest);
+            var productRequest = com.thinh.cosmetic.domain.dto.request.catalog.ProductRequest.builder().name("RBAC product")
+                    .brandId(brand.getId()).categoryId(category.getId()).status(ActiveStatus.ACTIVE).build();
+            var product = productService.create(productRequest);
+            assertThat(productService.update(product.getId(), productRequest).getId()).isEqualTo(product.getId());
+            productService.delete(product.getId());
+            brandService.update(brand.getId(), brandRequest); brandService.delete(brand.getId());
+            categoryService.update(category.getId(), categoryRequest); categoryService.delete(category.getId());
+            var supplierRequest = com.thinh.cosmetic.domain.dto.request.purchase.SupplierRequest.builder().name("RBAC supplier").build();
+            var supplier = supplierService.create(supplierRequest);
+            assertThat(supplierService.getById(supplier.getId()).getId()).isEqualTo(supplier.getId());
+            assertThat(supplierService.getAll()).extracting(s -> s.getId()).contains(supplier.getId());
+            supplierService.update(supplier.getId(), supplierRequest); supplierService.deactivate(supplier.getId());
+            var voucherRequest = com.thinh.cosmetic.domain.dto.request.order.VoucherRequest.builder().code("RBAC-" + UUID.randomUUID())
+                    .discountType(DiscountType.FIXED).discountValue(java.math.BigDecimal.ONE).build();
+            var voucher = voucherService.create(voucherRequest);
+            assertThat(voucherService.getById(voucher.getId()).getId()).isEqualTo(voucher.getId());
+            assertThat(voucherService.getByCode(voucherRequest.getCode()).getId()).isEqualTo(voucher.getId());
+            assertThat(voucherService.getAll()).extracting(v -> v.getId()).contains(voucher.getId());
+            assertThat(voucherService.calculateDiscount(voucherRequest.getCode(), java.math.BigDecimal.TEN)).isEqualByComparingTo("1");
+            voucherService.update(voucher.getId(), voucherRequest); voucherService.deactivate(voucher.getId());
+            assertThat(policy.storeIds()).isEmpty();
+        } finally { SecurityContextHolder.clearContext(); }
+        assertThat(productService.getAll()).isNotNull();
+        assertThat(brandService.getAll()).isNotNull();
+        assertThat(categoryService.getAll()).isNotNull();
+        assertThatThrownBy(() -> supplierService.getAll()).isInstanceOf(org.springframework.security.authentication.AuthenticationCredentialsNotFoundException.class);
+    }
+
+    @Test
+    void invalidStoresAndPermissionSetsPreserveExistingLinksAndAudit() throws Exception {
+        var administrator = admin(); var role = customRole("INVENTORY_READ"); var target = employee(role); var assigned = store();
+        employeeStores.saveAndFlush(EmployeeStoreEntity.builder().employee(target).store(assigned).isPrimaryBranch(true).build());
+        var request = edit(target, List.of(role.getId()));
+        request.setEmail("changed-" + UUID.randomUUID() + "@lunea.test");
+        long auditCount = auditLogs.count();
+        for (List<Long> ids : List.of(List.of(assigned.getId(), Long.MAX_VALUE), List.of(assigned.getId(), assigned.getId()), List.of(0L))) {
+            request.setStoreIds(ids); request.setPrimaryStoreId(assigned.getId());
+            mvc.perform(put("/api/employees/{id}", target.getId()).session(session(administrator)).with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isBadRequest());
+        }
+        var inactive = store(); inactive.setStatus(ActiveStatus.INACTIVE); stores.saveAndFlush(inactive);
+        request.setStoreIds(List.of(inactive.getId())); request.setPrimaryStoreId(inactive.getId());
+        mvc.perform(put("/api/employees/{id}", target.getId()).session(session(administrator)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isBadRequest());
+        assertThat(employeeStores.findByEmployeeId(target.getId())).extracting(s -> s.getStore().getId()).containsExactly(assigned.getId());
+        assertThat(accounts.findById(target.getAccount().getId()).orElseThrow().getEmail()).isEqualTo(target.getAccount().getEmail());
+        var permission = permissions.findByCode("INVENTORY_READ").orElseThrow();
+        for (List<Long> ids : List.of(List.of(permission.getId(), Long.MAX_VALUE), List.of(permission.getId(), permission.getId()), List.of(-1L))) {
+            mvc.perform(put("/api/roles/{id}/permissions", role.getId()).session(session(administrator)).with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON).content(body(Map.of("permissionIds", ids)))).andExpect(status().isBadRequest());
+        }
+        var reserved = permissions.findByCode("ROLE_MANAGE").orElseThrow();
+        mvc.perform(put("/api/roles/{id}/permissions", role.getId()).session(session(administrator)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(Map.of("permissionIds", List.of(reserved.getId()))))).andExpect(status().isConflict());
+        assertThat(rolePermissions.findByRoleId(role.getId())).extracting(p -> p.getPermission().getId()).containsExactly(permission.getId());
+        assertThat(auditLogs.count()).isEqualTo(auditCount);
+    }
+
+    @Test
+    void directStaffCommandsRejectWrongPermissionBindingAndRevokedIdentity() {
+        var worker = employee(customRole("CATALOG_MANAGE"));
+        as(worker);
+        try {
+            assertThatThrownBy(() -> employeeService.create(request(null, null))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+            assertThatThrownBy(() -> roleGrantService.replacePermissions(Long.MAX_VALUE, List.of())).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        } finally { SecurityContextHolder.clearContext(); }
+        var manager = employee(customRole("EMPLOYEE_MANAGE")); var other = employee(null);
+        as(manager);
+        var principal = new AccountPrincipal(other.getAccount().getId(), AccountType.EMPLOYEE, null, manager.getId(), manager.getAccount().getCredentialsVersion());
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"))));
+        try { assertThatThrownBy(() -> employeeService.search(null, 0, 10)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class); }
+        finally { SecurityContextHolder.clearContext(); }
+        as(manager);
+        var account = accounts.findById(manager.getAccount().getId()).orElseThrow(); account.setCredentialsVersion(account.getCredentialsVersion() + 1); accounts.saveAndFlush(account);
+        try { assertThatThrownBy(() -> employeeService.search(null, 0, 10)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class); }
+        finally { SecurityContextHolder.clearContext(); }
+    }
+
+    @Test
+    void databaseAuditFailureRollsBackProfileScopeCredentialAndDeactivation() throws Exception {
+        var administrator = admin(); var role = customRole("INVENTORY_READ"); var target = employee(role); var oldStore = store(); var newStore = store();
+        employeeStores.saveAndFlush(EmployeeStoreEntity.builder().employee(target).store(oldStore).isPrimaryBranch(true).build());
+        var original = accounts.findById(target.getAccount().getId()).orElseThrow();
+        long auditCount = auditLogs.count();
+        // Fail inside the real repository flush, after the profile and replacement links have been flushed.
+        doAnswer(invocation -> {
+            AuditLogEntity event = invocation.getArgument(0);
+            event.setAction("X".repeat(300));
+            entityManager.persist(event);
+            entityManager.flush();
+            return event;
+        }).when(auditLogs).saveAndFlush(any(AuditLogEntity.class));
+        var request = edit(target, List.of()); request.setFullName("Changed profile"); request.setPassword("ChangedPass123");
+        request.setStoreIds(List.of(newStore.getId())); request.setPrimaryStoreId(newStore.getId()); request.setStatus(ActiveStatus.INACTIVE);
+        var failure = mvc.perform(put("/api/employees/{id}", target.getId()).session(session(administrator)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isInternalServerError()).andReturn();
+        assertThat(failure.getResolvedException()).isInstanceOf(jakarta.persistence.PersistenceException.class);
+        mvc.perform(delete("/api/employees/{id}", target.getId()).session(session(administrator)).with(csrf())).andExpect(status().isInternalServerError());
+        var after = accounts.findById(original.getId()).orElseThrow();
+        assertThat(after.getPasswordHash()).isEqualTo(original.getPasswordHash());
+        assertThat(after.getCredentialsVersion()).isEqualTo(original.getCredentialsVersion());
+        assertThat(after.getStatus()).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(employees.findById(target.getId()).orElseThrow().getFullName()).isEqualTo(target.getFullName());
+        assertThat(employees.findById(target.getId()).orElseThrow().getStatus()).isEqualTo(ActiveStatus.ACTIVE);
+        assertThat(employeeRoles.findByEmployeeId(target.getId())).extracting(l -> l.getRole().getId()).containsExactly(role.getId());
+        assertThat(employeeStores.findByEmployeeId(target.getId())).extracting(l -> l.getStore().getId()).containsExactly(oldStore.getId());
+        assertThat(auditLogs.count()).isEqualTo(auditCount);
+        mvc.perform(get("/api/auth/me").session(session(target))).andExpect(status().isOk());
+    }
+
+    @Test
+    void concurrentEmployeeCreationCommitsExactlyOneIdentityAndAudit() throws Exception {
+        var administrator = admin(); var request = request(customRole("EMPLOYEE_READ"), store());
+        var ready = new CountDownLatch(2); var start = new CountDownLatch(1);
+        var payload = body(request);
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var results = new ArrayList<java.util.concurrent.Future<Integer>>();
+            for (int i = 0; i < 2; i++) {
+                var actorSession = session(administrator);
+                results.add(pool.submit(() -> {
+                    ready.countDown(); if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Concurrent start timed out");
+                    return mvc.perform(post("/api/employees").session(actorSession).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(payload)).andReturn().getResponse().getStatus();
+                }));
+            }
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue(); start.countDown();
+            assertThat(List.of(results.get(0).get(30, TimeUnit.SECONDS), results.get(1).get(30, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(201, 409);
+        }
+        var account = accounts.findByEmail(request.getEmail()).orElseThrow();
+        var target = employees.findByAccountId(account.getId()).orElseThrow();
+        assertThat(employeeRoles.findByEmployeeId(target.getId())).hasSize(1);
+        assertThat(employeeStores.findByEmployeeId(target.getId())).hasSize(1);
+        assertThat(auditLogs.findAll().stream().filter(a -> "EMPLOYEE_CREATED".equals(a.getAction()) && target.getId().toString().equals(a.getObjectId())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void globalServicesCannotBypassControllerPermissions() {
+        var worker = employee(customRole("INVENTORY_MANAGE"));
+        SecurityContextHolder.setContext((org.springframework.security.core.context.SecurityContext)
+                session(worker).getAttribute("SPRING_SECURITY_CONTEXT"));
+        try {
+            org.junit.jupiter.api.Assertions.assertAll(
+                () -> assertThatThrownBy(() -> productService.create(null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> productService.update(Long.MAX_VALUE, null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> productService.delete(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> categoryService.create(null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> categoryService.update(Long.MAX_VALUE, null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> categoryService.delete(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> brandService.create(null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> brandService.update(Long.MAX_VALUE, null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> brandService.delete(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> supplierService.create(null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> supplierService.getAll()).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> supplierService.getById(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> supplierService.update(Long.MAX_VALUE, null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> supplierService.deactivate(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.create(null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.getAll()).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.getById(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.getByCode("missing")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.update(Long.MAX_VALUE, null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.deactivate(Long.MAX_VALUE)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class),
+                () -> assertThatThrownBy(() -> voucherService.calculateDiscount("missing", java.math.BigDecimal.TEN)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+            );
+        } finally { SecurityContextHolder.clearContext(); }
+    }
+
+    @Test
+    void liveStoreAssignmentChangesApplyToExistingSessionAndAdminStillNeedsPermission() throws Exception {
+        var administrator = admin(); var role = customRole("INVENTORY_READ"); var worker = employee(role); var branch = store();
+        var workerSession = session(worker);
+        mvc.perform(get("/api/inventory/store/{id}", branch.getId()).session(workerSession)).andExpect(status().isForbidden());
+        var request = edit(worker, List.of(role.getId())); request.setStoreIds(List.of(branch.getId())); request.setPrimaryStoreId(branch.getId());
+        mvc.perform(put("/api/employees/{id}", worker.getId()).session(session(administrator)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isOk());
+        mvc.perform(get("/api/inventory/store/{id}", branch.getId()).session(workerSession)).andExpect(status().isOk());
+        request.setStoreIds(List.of()); request.setPrimaryStoreId(null);
+        mvc.perform(put("/api/employees/{id}", worker.getId()).session(session(administrator)).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isOk());
+        mvc.perform(get("/api/inventory/store/{id}", branch.getId()).session(workerSession)).andExpect(status().isForbidden());
+        var adminRole = roles.findByName("ADMIN").orElseThrow(); var permission = permissions.findByCode("INVENTORY_READ").orElseThrow();
+        var grantId = new RolePermissionId(adminRole.getId(), permission.getId());
+        rolePermissions.deleteById(grantId);
+        try { mvc.perform(get("/api/inventory/store/{id}", branch.getId()).session(session(administrator))).andExpect(status().isForbidden()); }
+        finally { rolePermissions.saveAndFlush(RolePermissionEntity.builder().role(adminRole).permission(permission).build()); }
+        mvc.perform(get("/api/inventory/store/{id}", branch.getId()).session(session(administrator))).andExpect(status().isOk());
+    }
+
+    @Test
+    void employeeManagerCannotModifyPrivilegedEmployeesOrOwnScopeAndStatus() throws Exception {
+        var manager = employee(role("QLNV", "EMPLOYEE_READ", "EMPLOYEE_MANAGE")); var administrator = admin(); var branch = store();
+        var managerSession = session(manager);
+        mvc.perform(put("/api/employees/{id}", administrator.getId()).session(managerSession).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(edit(administrator, List.of())))).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/employees/{id}", administrator.getId()).session(managerSession).with(csrf())).andExpect(status().isForbidden());
+        var request = edit(manager, List.of(roles.findByName("QLNV").orElseThrow().getId()));
+        request.setStoreIds(List.of(branch.getId())); request.setPrimaryStoreId(branch.getId());
+        mvc.perform(put("/api/employees/{id}", manager.getId()).session(managerSession).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isForbidden());
+        request.setStoreIds(List.of()); request.setPrimaryStoreId(null); request.setStatus(ActiveStatus.INACTIVE);
+        mvc.perform(put("/api/employees/{id}", manager.getId()).session(managerSession).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(body(request))).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/employees/{id}", administrator.getId()).session(session(administrator)).with(csrf())).andExpect(status().isForbidden());
+        assertThat(accounts.findById(manager.getAccount().getId()).orElseThrow().getStatus()).isEqualTo(AccountStatus.ACTIVE);
+        assertThat(employeeStores.findByEmployeeId(manager.getId())).isEmpty();
+    }
 
     @Test
     void createUsesSuppliedCredentialsPrimaryScopeAndPrincipalAudit() throws Exception {

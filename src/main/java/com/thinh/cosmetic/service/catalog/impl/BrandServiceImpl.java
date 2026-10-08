@@ -8,6 +8,7 @@ import com.thinh.cosmetic.repository.catalog.BrandRepository;
 import com.thinh.cosmetic.service.catalog.BrandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class BrandServiceImpl implements BrandService {
     private final BrandMapper brandMapper;
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public BrandResponse create(BrandRequest request) throws Exception {
         BrandEntity brand = brandMapper.toEntity(request);
 
@@ -50,6 +52,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public BrandResponse update(Long id, BrandRequest request) throws Exception {
         BrandEntity brand = brandRepository.findById(id)
                 .orElseThrow(() ->
@@ -64,6 +67,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public void delete(Long id) throws Exception {
         BrandEntity brand = brandRepository.findById(id)
                 .orElseThrow(() ->

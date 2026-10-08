@@ -8,6 +8,7 @@ import com.thinh.cosmetic.repository.catalog.CategoryRepository;
 import com.thinh.cosmetic.service.catalog.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryMapper categoryMapper;
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public CategoryResponse create(CategoryRequest request) throws Exception {
         CategoryEntity category = categoryMapper.toEntity(request);
 
@@ -49,6 +51,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public CategoryResponse update(Long id, CategoryRequest request) throws Exception {
         CategoryEntity category = categoryRepository.findById(id)
                 .orElseThrow(() ->
@@ -63,6 +66,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public void delete(Long id) throws Exception {
         categoryRepository.deleteById(id);
     }

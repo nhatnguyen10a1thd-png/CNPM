@@ -10,6 +10,7 @@ import com.thinh.cosmetic.repository.order.VoucherRepository;
 import com.thinh.cosmetic.service.order.VoucherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final VoucherMapper voucherMapper;
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_MANAGE')")
     public VoucherResponse create(VoucherRequest request) throws Exception {
         if (voucherRepository.existsByCode(request.getCode())) {
             throw new Exception("Voucher code already exists: " + request.getCode());
@@ -36,6 +38,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_READ')")
     public VoucherResponse getById(Long id) throws Exception {
         return voucherMapper.toResponse(voucherRepository.findById(id)
                 .orElseThrow(() -> new Exception("Voucher not found: " + id)));
@@ -43,6 +46,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_READ')")
     public VoucherResponse getByCode(String code) throws Exception {
         return voucherMapper.toResponse(voucherRepository.findByCode(code)
                 .orElseThrow(() -> new Exception("Voucher not found: " + code)));
@@ -50,11 +54,13 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_READ')")
     public List<VoucherResponse> getAll() {
         return voucherRepository.findAll().stream().map(voucherMapper::toResponse).toList();
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_MANAGE')")
     public VoucherResponse update(Long id, VoucherRequest request) throws Exception {
         VoucherEntity entity = voucherRepository.findById(id)
                 .orElseThrow(() -> new Exception("Voucher not found: " + id));
@@ -63,6 +69,7 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_MANAGE')")
     public void deactivate(Long id) throws Exception {
         VoucherEntity entity = voucherRepository.findById(id)
                 .orElseThrow(() -> new Exception("Voucher not found: " + id));
@@ -72,6 +79,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.has('PROMOTION_READ')")
     public BigDecimal calculateDiscount(String code, BigDecimal orderTotal) throws Exception {
         VoucherEntity v = voucherRepository.findByCode(code)
                 .orElseThrow(() -> new Exception("Voucher not found: " + code));

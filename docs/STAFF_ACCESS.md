@@ -23,6 +23,18 @@ ADMIN additionally has ROLE_MANAGE and AUDIT_READ. Reserved ADMIN grants cannot 
 
 Catalog reads remain public. Catalog commands require CATALOG_MANAGE. Suppliers and vouchers use their global read/manage permissions. Store updates/deactivation require STORE_MANAGE and the target store assignment; creation is reserved for ADMIN. Store listing for EMPLOYEE_MANAGE supports assignment selection across branches. Other STORE_READ staff see assigned stores only. Inventory operations require INVENTORY_READ/MANAGE plus the requested store assignment. Purchases require PURCHASE_READ/MANAGE plus the receiving store assignment. Transfers require TRANSFER_READ/MANAGE plus both source and destination assignments; list queries use the same bounds. Missing/null store scope denies access.
 
+Reverified 2026-10-08: catalog mutations, supplier operations and voucher operations now enforce these same permissions on the managed Spring service beans as well as their existing controllers. Calling a service directly cannot bypass the controller check. Global data still has no branch requirement. Catalog reads remain public. This closes a controller-only enforcement gap without changing the role matrix, routes or business rules.
+
+## Existing routes for consumer phases
+
+| Route family | Existing methods | Permission on controller and service |
+|---|---|---|
+| `/api/products`, `/api/categories`, `/api/brands` | GET collection and `/{id}`; POST collection; PUT/DELETE `/{id}` | GET public; mutations CATALOG_MANAGE |
+| `/api/suppliers` | GET/POST collection; GET/PUT/DELETE `/{id}` | GET SUPPLIER_READ; mutations SUPPLIER_MANAGE |
+| `/api/vouchers` | GET/POST collection; GET/PUT/DELETE `/{id}`; GET `/code/{code}`; GET `/discount?code=&orderTotal=` | GET PROMOTION_READ; mutations PROMOTION_MANAGE |
+
+There is no attribute or dedicated SKU CRUD route in this handoff. Catalog search, taxonomy, validation, history-safe deactivation and the consumer screens remain with Phase05+. The current DELETE implementations must be reviewed by those owners before claiming their business acceptance. `VoucherService.calculateDiscount` is currently a staff operation guarded by PROMOTION_READ; Phase18 must provide its customer quote/eligibility contract before enabling any customer pricing flow. Permission changes alone do not enable the denied customer APIs.
+
 Customer, cart, wishlist, order, return and review routes remain denied by the security boundary pending their later ownership/business phases. Their old default actor ID of 1 has been removed. Their existing business logic has not been completed by Phase 04. Audit search and reports are also later phases; creating a writer or permission code does not enable those workflows.
 
 ## Employee endpoints

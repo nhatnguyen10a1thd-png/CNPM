@@ -12,6 +12,7 @@ import com.thinh.cosmetic.repository.catalog.ProductRepository;
 import com.thinh.cosmetic.service.catalog.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ProductResponse create(ProductRequest request) throws Exception {
         ProductEntity product = productMapper.toEntity(request);
 
@@ -73,6 +75,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ProductResponse update(Long id, ProductRequest request) throws Exception {
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() ->
@@ -106,6 +109,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public void delete(Long id) throws Exception {
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() ->
