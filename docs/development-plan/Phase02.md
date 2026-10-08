@@ -2,7 +2,7 @@
 
 > Status: IMPLEMENTED_AND_TESTED_LOCAL. Complexity: HIGH. Risk: HIGH.
 > [Project Audit](00_PROJECT_AUDIT.md) · [Master Roadmap](01_MASTER_ROADMAP.md) · [Final Checklist](FINAL_CHECKLIST.md).
-> Đã triển khai và kiểm thử local ngày 2026-10-07. Kiểm kê/migration dữ liệu đang triển khai và kiểm thử hết hạn theo thời gian thực còn chờ. Xem [báo cáo Phase 01–04](../PHASE_01_04_REPORT.md) và [hướng dẫn database](../database/README.md).
+> Đã triển khai và kiểm thử local ngày 2026-10-07; phiên 02 ngày 2026-10-08 kiểm chứng lại và hoàn thiện hai gap UI. Timed servlet expiry đã chạy với timeout test 3/6 giây; chưa chờ 30 phút/7 ngày mặc định hoặc kiểm kê/migrate database legacy. Supabase là schema mới với app local theo report tích hợp, không phải dữ liệu legacy đã migrate. Xem Completion Report bên dưới, [báo cáo Phase 01–04](../PHASE_01_04_REPORT.md) và [hướng dẫn database](../database/README.md).
 
 ## 1. Objective
 
@@ -23,6 +23,8 @@ Các dòng bên dưới là **baseline audit trước triển khai**, được g
 - 9tests baseline không authentication/ownership tests; PostgreSQLschema/legacyaccounts chưa kiểm kê.
 
 Trạng thái mô tả là baseline audit2026-10-07; phải đọc source và report các Phase trước để xác minh lại. Không coi file/class hiện có là bằng chứng hoàn tất toàn luồng.
+
+Đối chiếu trước thay đổi phiên 02 (2026-10-08): source đã có route → AccountService → repositories → Account/Customer/Employee, BCrypt, status, principal, session/CSRF, remember và credential-version; browser → fetch → API → UI thật. D01/D02 được tái sử dụng. Hai gap thực tế: nút đăng ký vẫn enabled khi form rỗng/sai confirmation/phone/UTF-8 byte limit; CSRF được giữ trong JS sau khi session hết hạn nên đăng nhập lại trả 403 đến khi reload. Edge/HTTP trên demo riêng tái hiện 7/21 checkpoint thất bại trước sửa. Không phát hiện lý do dựng lại backend auth hay mở thêm domain route. Phase01 cung cấp được Java21, test isolation, semantic errors và migration runbook; giới hạn legacy/production của report Phase01 vẫn giữ nguyên.
 
 ## 4. Preconditions
 
@@ -111,13 +113,13 @@ Dự kiến account status theo bảng109, constraints username/email/phone uniq
 - [x] Thiết lập restricteddefault route protection: publicauth/publiccatalogread theo policy, private/admin denied khi chưaapprovedRBAC04; không mở toàn bộAPI do thiếurolegrant.
 - [x] Nối currentcustomerresolver/identity boundary cho consumerphases; rawdefaultID không được coi principal dù parameter vẫn tồn tại để compatibility.
 - [x] Chuẩn hóa authfailure/duplicate/status errors với01; không leak accountpassword/hash/internal details.
-- [x] Thêm 14 auth integration tests cho identity/password/duplicate/logout/status/version/legacy; kiểm thử giá trị timeout. Timed servlet expiry còn chờ trong Verification.
+- [x] Giữ 14 auth integration tests cho identity/password/duplicate/logout/status/version/legacy; kiểm chứng lại trên H2. Timed servlet expiry với timeout ngắn đã có HTTP/browser evidence; PostgreSQL hiện không có listener để chạy lại.
 
 ## 12. Frontend Tasks
 
 - [x] Buildlogin/register screens theo UI dark/gold/moon/sharedconventions đã chọnD01, không tự thêm SiteMesh.
 - [x] Login hỗ trợ approvedidentifier, show/hidepassword, remember behavior; linkforgot chỉ nối03 khi có, không tạo fake success.
-- [x] Registeroptionalphone/confirm/terms/passwordhint/disabledsubmit theo D02; servervalidation vẫn authoritative.
+- [x] Register optional phone/confirm/terms/password hint/disabled submit theo D02; phiên 02 hoàn thiện validation 8 ký tự/chữ/số/72 UTF-8 bytes, phone normalize và trạng thái nút sau loading/reset/error; server validation vẫn authoritative.
 - [x] Hiển thị invalidcredentials/accountinactive/duplicate/field errors; loading/submission prevention không thay atomicserverguards.
 - [x] Login redirects theoaccounttype/rights contract; customer bypass diagram không được bypassprivateAPI.
 - [x] Logout controls kết thúcidentitythật; browserback không cấp lạiprivateaccess; responsive/keyboard/formlabels.
@@ -162,7 +164,8 @@ Public register/login cần validation và abuse controls phù hợp; currentacc
 - [x] Account mới lưu BCrypt, response không lộ hash/password; unique constraints, duplicate race và rollback Account+Customer đã kiểm thử trên H2/PostgreSQL.
 - [ ] Kiểm kê và xử lý plaintext/duplicate/null trong database đang triển khai: chưa truy cập được dữ liệu hiện hữu.
 - [x] Anonymous private API bị deny; login/logout, staff identity, khóa tài khoản và credentialsVersion revocation đã chạy.
-- [ ] Chờ session tự hết hạn theo thời gian thực trong servlet container: chưa thực hiện; giá trị timeout đã được kiểm thử.
+- [x] Chờ session tự hết hạn theo thời gian thực trong servlet container trên demo riêng: normal 3 giây, remember 6 giây; HTTP me trả 401 sau khoảng idle thật. Remember còn truy cập được sau 4 giây, rồi hết hạn sau khoảng idle 7,5 giây tiếp theo. Không thay clock hoặc gọi invalidate để giả lập expiry.
+- [ ] Chờ hết thời gian 30 phút/7 ngày mặc định và kiểm chứng deployed HTTPS: chưa thực hiện; không suy từ timeout test ngắn.
 - [x] Hai screen minrule/optionalphone/confirm/terms/remember theoapprovedD02; responsive/empty/errorstates.
 - [x] Existing9tests pass; chưaclaim toàn bộdomainownershipđãfix.
 - [x] Ghi exact command/environment/result và giới hạn evidence trong Verification Result; không đổi UNKNOWN thành PASS bằng suy đoán.
@@ -190,7 +193,7 @@ Chạy các case phù hợp trên PostgreSQL/test environment có dữ liệu x�
 ## 20. Definition of Done
 
 - [x] Identity/hash/status/register/login/logout verified local theo D01/D02 được chọn trong phạm vi yêu cầu người dùng.
-- [ ] Kiểm thử session tự hết hạn theo đồng hồ thực còn chờ.
+- [x] Kiểm thử session tự hết hạn theo đồng hồ thực trong servlet với timeout test ngắn; kiểm chứng login lại không reload. Thời lượng mặc định/HTTPS thật vẫn ghi là giới hạn.
 - [x] Hai screens nốibackend thực, không fakeauthed/customerbypass.
 - [ ] Unique/rollback/no-orphan đã có evidence trên database test; kế hoạch legacy/migration có runbook, nhưng chưa áp dụng/kiểm kê database đang triển khai.
 - [x] Identity resolver/routeboundary bàn giao04/11/17; domainbugs chưafix ghi rõ.
@@ -235,6 +238,8 @@ IMPLEMENTED_AND_TESTED_LOCAL
 
 Ngày ghi nhận: 2026-10-07. Trạng thái này xác nhận implementation và kiểm thử local; không xác nhận dữ liệu/migration/HTTPS production. Bằng chứng tổng hợp tại [PHASE_01_04_REPORT.md](../PHASE_01_04_REPORT.md); quy trình triển khai schema tại [database/README.md](../database/README.md).
 
+Phiên 02 kiểm chứng lại ngày 2026-10-08: **COMPLETED** cho hai gap auth UI trong phạm vi đã tìm thấy. Giữ status Phase **IMPLEMENTED_AND_TESTED_LOCAL**, không nâng thành COMPLETED toàn bộ vì DoD kiểm kê/migration legacy chưa đạt. Report tích hợp ngày 08/10 đã ghi schema Supabase mới và app local kết nối; phiên này không mutation hoặc chạy test create-drop vào Supabase.
+
 ## Work Completed
 
 - Đăng ký Account+Customer trong một transaction, BCrypt thay raw password, giữ loyaltyPoints=0 và joinDate. Unique email/username/phone; duplicate race trả 409; lỗi insert Customer rollback Account.
@@ -242,6 +247,7 @@ Ngày ghi nhận: 2026-10-07. Trạng thái này xác nhận implementation và 
 - Spring Security session principal, current-account/customer/employee resolver, GET me, CSRF, logout; login xoay session và CSRF. Session bị vô hiệu hóa khi status hoặc credentialsVersion thay đổi.
 - Route protection mặc định hạn chế; quyền nhân viên dùng policy Phase04. Các API customer/order/returns/reviews chưa có đầy đủ ownership vẫn đóng, không dùng customerId mặc định làm danh tính.
 - Abuse guard bounded trong memory; UI login/register/remember/show-password/terms/error/loading/logout nối API thật và recovery Phase03.
+- Phiên 02: validation form đăng ký và disabled submit theo validity/loading; chặn submit lặp khi busy. Xóa CSRF cached khi refresh session nhận 401 và lấy CSRF hiện tại trước login/register, giúp đăng nhập lại sau expiry mà không reload. Giữ server CSRF enforcement; không retry tự động mutation lỗi 403.
 
 ## Files Created
 
@@ -251,6 +257,7 @@ Ngày ghi nhận: 2026-10-07. Trạng thái này xác nhận implementation và 
 - `src/main/java/com/thinh/cosmetic/domain/dto/response/account/AuthResponse.java`
 - `src/test/java/com/thinh/cosmetic/security/AuthenticationIntegrationTest.java` — 14 tests.
 - UI dùng chung Phase02–04: `src/main/resources/static/{index.html,app.css,app.js}`.
+- Phiên 02: `scripts/verify-phase02-browser.{py,js}` — regression DOM/HTTP bằng Edge headless, profile test mới và H2 demo loopback riêng; Python standard library, không thêm dependency ứng dụng.
 
 ## Files Modified
 
@@ -258,12 +265,15 @@ Ngày ghi nhận: 2026-10-07. Trạng thái này xác nhận implementation và 
 - `domain/dto/request/account/{LoginRequest,RegisterRequest}.java`.
 - `service/account/AccountService.java`, `service/account/impl/AccountServiceImpl.java`, `rest/account/AuthRestController.java`.
 - Foundation phối hợp Phase01: `pom.xml`, cấu hình profiles, semantic error contract, Clock và schema runbook. Controller identity boundaries được Phase04 tích hợp, không tạo lại ownership workflow của Phase sau.
+- Phiên 02 chỉ sửa source UI `static/app.js`, `static/index.html` cùng report/verification scripts. Các thay đổi foundation/runbook xuất hiện đồng thời trong workspace được giữ nguyên, không nhận là phần implementation của phiên này.
 
 ## Database Changes
 
 Account mapping thêm `status` STRING (`ACTIVE`, `LOCKED`) và `credentials_version` BIGINT mặc định 0; email/username bắt buộc và unique tối đa 254 ký tự; phone optional/unique tối đa 16 ký tự; password_hash bắt buộc tối đa 100 ký tự. Password không serialize và không xuất trong toString. Giữ account/customer PK và lịch sử.
 
 Schema mới đã chạy trên H2 và PostgreSQL16.15 disposable test. `docs/database/V001__identity_security.sql` là migration thủ công có transaction/preflight, normalization và unique indexes. Chưa áp dụng lên database hiện hữu; không reset dữ liệu cũ. Legacy plaintext không được so sánh để đăng nhập; recovery có xác minh thay credential. Không tự gán mật khẩu chung hay tuyên bố toàn bộ storage cũ đã hết plaintext.
+
+Phiên 02 không đổi entity/constraints/migration, không truy cập secrets và không reset database. Đã đọc inventory/V001/runbook, đối chiếu DOCX bảng 109/110: mapping hiện có ACTIVE/LOCKED và credential-version theo contract đã triển khai; giữ PK, Customer/history, không tự chuyển storage cũ. Script inventory hiện hỗ trợ schema riêng; đối với Supabase mới dùng `inventory_schema=lunea`, không suy fixture test thành dữ liệu kinh doanh.
 
 ## APIs / Routes Added
 
@@ -294,27 +304,40 @@ Basic same-origin UI tại `/`: login email/phone, hiện/ẩn mật khẩu, rem
 - UI tối thiểu dùng static JS thay Thymeleaf/Bootstrap được roadmap nêu như recommendation chưa chốt; cùng origin và session nên không cần thêm frontend platform.
 - Phase02/03/04 được tích hợp trong cùng yêu cầu người dùng, recovery và staff rights có report riêng.
 - Phân biệt `IMPLEMENTED_AND_TESTED_LOCAL` với full deployed completion vì dữ liệu hiện hữu chưa kiểm kê/migrate; timed container expiry chưa thực nghiệm. Timeout configuration và status/version revocation đã verified.
+- Phiên 02 đã bổ sung timed expiry thực nghiệm với 3/6 giây; không thay policy 30 phút/7 ngày, D01/D02, routes hoặc dependency. Browser tool không khởi tạo được do lỗi sandbox; dùng installed Edge headless qua CLI với profile mới, đóng browser sau test.
 
 ## Known Issues
 
 - PostgreSQL developer/deployed port5432 chưa truy cập được; duplicates/null/plaintext/profile link inventory và V001 trên dữ liệu đó chưa verified. Plaintext lịch sử vẫn nguyên storage đến khi recovery/migration xử lý; không có plaintext fallback.
-- Chưa chờ session tự timeout thực tế trong servlet container. Remember là session kéo dài trong memory, không giữ identity sau app restart.
+- Timed servlet expiry 3/6 giây đã verified trên demo H2; chưa chờ hết 30 phút/7 ngày mặc định hoặc verify HTTPS deployed. Remember là session kéo dài trong memory, không giữ identity sau app restart.
 - Customer profile/cart/order/return/review business ownership thuộc Phase11/17/19–24; các route tương ứng đang bị deny, không coi resolver hay UI là đủ ownership.
 - Chưa xác nhận distributed rate limiting, deployed HTTPS hoặc cross-browser đầy đủ. Demo H2 là disposable và loopback-only.
 
 ## Remaining Tasks
 
 - Chạy read-only inventory, reconcile và migration có backup trên database hiện hữu theo runbook; thay credential legacy qua recovery có xác minh.
-- Kiểm thử timed servlet expiry và environment HTTPS thật; follow-up consumer ownership theo Phase owners.
+- Kiểm chứng thời lượng timeout mặc định và environment HTTPS thật; chạy lại PostgreSQL test khi có DB riêng `_test`. Follow-up consumer ownership theo Phase owners; phiên này dừng tại Phase02.
 
 ## Verification Result
 
 JDK21 và Maven Wrapper: `mvnw.cmd -o test` — 52/52 pass trên H2; `mvnw.cmd -o test -Dspring.profiles.active=test-postgres` với PostgreSQL16.15 disposable `lunea_test` tại localhost15432 — 52/52 pass. `mvnw.cmd -o package -DskipTests` — BUILD SUCCESS. Trong đó AuthenticationIntegrationTest 14/14 pass trên cả hai databases, existing9 tests vẫn pass.
 
-Auth tests verified BCrypt/no-secret response/default customer, phone identity/tampered customerId, session rotation/remember Secure cookie+timeout value, logout, ACTIVE/version revocation, staff login without Customer/no automatic grants, CSRF/anonymous deny, wrong/blank credentials, password/terms/UTF-8 boundary, throttle, concurrent registration, late Customer rollback và legacy plaintext rejection. P02-T07 timed expiry và P02-T10 deployed legacy inventory chưa verified; không dùng H2/new PG schema để suy ra deployed-data safety.
+Auth tests verified BCrypt/no-secret response/default customer, phone identity/tampered customerId, session rotation/remember Secure cookie+timeout value, logout, ACTIVE/version revocation, staff login without Customer/no automatic grants, CSRF/anonymous deny, wrong/blank credentials, password/terms/UTF-8 boundary, throttle, concurrent registration, late Customer rollback và legacy plaintext rejection. Tại verification 2026-10-07, P02-T07 timed expiry và P02-T10 deployed legacy inventory chưa verified; phiên 02 bổ sung expiry ngắn như bên dưới. Không dùng H2/new PG schema để suy ra deployed-data safety.
 
 Root browser smoke dùng Edge headless, DOM thật với 15 checkpoints đều pass, gồm register/login/logout/reset/staff workflows và mobile width390. Demo tại `http://localhost:8080` chạy profile demo. Kết quả và log kiểm thử được tổng hợp trong [báo cáo Phase01–04](../PHASE_01_04_REPORT.md); hồ sơ browser tạm trong `target/browser-smoke/` đã được dọn sau kiểm thử.
+
+### Phiên 02 — verification 2026-10-08
+
+- Java21.0.10, Maven Wrapper, Python3.13.7, installed Edge154.0.4258.62 headless; demo loopback `127.0.0.1:18082`, H2 in-memory riêng. Không có listener PostgreSQL tại 5432/15432 trong phiên; evidence PostgreSQL16.15/Supabase bên trên là report trước, không phải rerun mới.
+- `$env:JAVA_HOME='C:/Program Files/Java/jdk-21.0.10'; .\mvnw.cmd -o test '-Dlogging.level.org.hibernate.SQL=OFF'`: đầu phiên **53/53 PASS** (`target/phase02-h2.log`); sau foundation cập nhật đồng thời **56/56 PASS** (`target/phase02-h2-final.log`), gồm auth **14/14**, existing9 và database safety5. Recovery/staff chỉ chạy regression, không triển khai thêm Phase03/04.
+- `.\mvnw.cmd -o package -DskipTests`: **BUILD SUCCESS** (`target/phase02-package-final.log`). Lần đầu repackage lỗi Windows giữ jar bởi demo; đã dừng đúng demo của phiên rồi build lại. Không chỉnh pom/Java target để vượt lỗi môi trường.
+- App test chạy qua `Start-Process -WindowStyle Hidden` với argv tương đương: `& "C:/Program Files/Java/jdk-21.0.10/bin/java.exe" -jar target/cosmetic-0.0.1-SNAPSHOT.jar --spring.profiles.active=demo --server.port=18082 --lunea.auth.session-timeout=3s --lunea.auth.remember-timeout=6s --logging.level.root=WARN --logging.level.org.hibernate.SQL=OFF`. `py scripts/verify-phase02-browser.py` chạy DOM forms và HTTP thật; không mock fetch hay đổi clock. **27/27 PASS**, exit 0; log `target/phase02-browser-final.log`. Chạy bản jar đã package sau sửa, không dùng artifact baseline cũ.
+- Trước sửa: **14 PASS / 7 FAIL** trong 21 checkpoints (`target/phase02-browser-before.log`), xác nhận hai gap nêu tại Current State. Sau sửa vòng đầu: **25/25 PASS**, gồm duplicate error/retry, validity/bytes, CSRF/anonymous deny, registration/customer/staff navigation, logout, timed expiry/re-login và mobile390. Visual QA screenshot login/register mobile đã đọc, không tràn ngang.
+- Bản cuối bổ sung kiểm tra whitespace fullName và mật khẩu ngắn: **27/27 PASS**. `git diff --check` PASS; source thay đổi của phiên chỉ là hai file UI. Browser test dùng profile mới, đóng sau run; demo test cũng dừng sau kiểm chứng. Không chạy Phase tiếp theo.
+- P02-T01–06/T08–11: source + auth14 H2 regression có evidence; duplicate race/late rollback nằm trong AuthenticationIntegrationTest. P02-T07: logout/revoke theo tests và timed expiry ngắn bằng servlet/HTTP/browser thật. P02-T10 dữ liệu legacy deployed vẫn **UNVERIFIED**; không dùng H2 PASS làm evidence PostgreSQL/deployed.
 
 ## Notes For Next Phase
 
 Dùng `CurrentAccountResolver.requireAccount()/requireCustomerId()/requireEmployeeId()` và AccountPrincipal; không tự dựng session mới hoặc lấy raw ID làm actor. Phase03 dùng PasswordEncoder/PasswordPolicy và tăng credentialsVersion khi reset. Phase04 dùng PermissionPolicy fresh grants, kiểm tra role AND store scope. Consumer chỉ mở private route sau khi service ownership được hoàn thiện và kiểm thử; đọc schema/runbook trước migration. Report này bàn giao local implementation có bằng chứng, không thay inventory của database thực.
+
+Capability auth local đã tồn tại và đã regression; Phase03/04 cũng đã có implementation theo report hiện hành, phiên sau phải kiểm chứng gap thay vì dựng lại. Nếu thực hiện trên database legacy cần inventory/reconcile/backup/migration trước; nếu kiểm thử mutation cần database test riêng. Giữ các API ownership chưa hoàn thiện ở trạng thái deny. Không bắt đầu Phase tiếp theo trong phiên này.

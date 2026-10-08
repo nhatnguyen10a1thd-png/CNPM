@@ -45,6 +45,7 @@ async function api(path, options = {}) {
   return result;
 }
 async function busy(element, task, localError) {
+  if (element.getAttribute('aria-busy') === 'true') return;
   const buttons = [...element.querySelectorAll('button')];
   const before = buttons.map(button => button.disabled);
   buttons.forEach(button => button.disabled = true);
@@ -56,6 +57,7 @@ async function busy(element, task, localError) {
   } finally {
     buttons.forEach((button, index) => button.disabled = before[index]);
     element.removeAttribute('aria-busy');
+    if (element.id === 'register-form') validateRegistration();
     $('prev-page').disabled = state.page <= 0;
     $('next-page').disabled = state.page + 1 >= state.pages;
     const role = state.roles.find(item => String(item.id) === $('role-select').value);
@@ -65,6 +67,21 @@ async function busy(element, task, localError) {
 function clearPasswords() {
   document.querySelectorAll('input[autocomplete="current-password"],input[autocomplete="new-password"],input[name="confirmPassword"]').forEach(input => { input.value = ''; input.type = 'password'; });
   document.querySelectorAll('[data-toggle-password]').forEach(button => { button.textContent = 'Hiện'; button.setAttribute('aria-label', 'Hiện mật khẩu'); });
+  validateRegistration();
+}
+function validateRegistration() {
+  const form = $('register-form');
+  const { fullName, phone, password, confirmPassword } = form.elements;
+  fullName.setCustomValidity(fullName.value.trim() ? '' : 'Vui lòng nhập họ và tên.');
+  const normalizedPhone = phone.value.trim().replace(/[\s().-]/g, '');
+  phone.setCustomValidity(!phone.value.trim() || /^\+?[0-9]{9,15}$/.test(normalizedPhone)
+    ? '' : 'Số điện thoại cần có từ 9 đến 15 chữ số.');
+  password.setCustomValidity(password.value.length < 8 || !/[A-Za-z]/.test(password.value) || !/[0-9]/.test(password.value)
+    ? 'Mật khẩu cần ít nhất 8 ký tự, có chữ và số.'
+    : new TextEncoder().encode(password.value).length > 72 ? 'Mật khẩu tối đa 72 byte.' : '');
+  confirmPassword.setCustomValidity(confirmPassword.value === password.value
+    ? '' : 'Mật khẩu xác nhận không khớp.');
+  form.querySelector('[type="submit"]').disabled = form.getAttribute('aria-busy') === 'true' || !form.checkValidity();
 }
 function authView(view) {
   clearPasswords();
@@ -90,7 +107,7 @@ function renderSession() {
 }
 async function refreshSession(quiet = false) {
   try { state.user = await api('/api/auth/me', { quiet: true }); }
-  catch (error) { if (error.status !== 401) throw error; state.user = null; }
+  catch (error) { if (error.status !== 401) throw error; state.user = null; state.csrf = null; }
   renderSession();
   if (!quiet && state.user) notify('Thông tin phiên đã được cập nhật.');
 }
@@ -208,6 +225,8 @@ $('login-form').addEventListener('submit', event => {
   event.preventDefault();
   busy(event.target, async () => {
     const form = event.target;
+    // The anonymous or expired session may have lost the CSRF secret since page load.
+    await csrf();
     state.user = await api('/api/auth/login', { method: 'POST', body: { identifier: form.elements.identifier.value, password: form.elements.password.value, rememberMe: form.elements.rememberMe.checked } });
     form.reset();
     clearPasswords();
@@ -219,10 +238,13 @@ $('login-form').addEventListener('submit', event => {
 });
 $('register-form').addEventListener('submit', event => {
   event.preventDefault();
+  validateRegistration();
+  if (!event.target.reportValidity()) return;
   busy(event.target, async () => {
     const data = Object.fromEntries(new FormData(event.target));
     if (data.password !== data.confirmPassword) throw new Error('Mật khẩu xác nhận không khớp.');
     data.termsAccepted = event.target.elements.termsAccepted.checked;
+    await csrf();
     await api('/api/auth/register', { method: 'POST', body: data });
     event.target.reset();
     authView('login');
@@ -230,9 +252,15 @@ $('register-form').addEventListener('submit', event => {
     notify('Đã tạo tài khoản. Hãy đăng nhập để tiếp tục.');
   });
 });
+$('register-form').addEventListener('input', validateRegistration);
+$('register-form').addEventListener('change', validateRegistration);
 $('recovery-form').addEventListener('submit', event => {
   event.preventDefault();
-  busy(event.target, async () => { const result = await api('/api/auth/recovery/request', { method: 'POST', body: Object.fromEntries(new FormData(event.target)) }); notify(result.message); await refreshInbox(); });
+  busy(event.target, async () => {
+    await csrf();
+    const result = await api('/api/auth/recovery/request', { method: 'POST', body: Object.fromEntries(new FormData(event.target)) });
+    notify(result.message); await refreshInbox();
+  });
 });
 $('reset-form').addEventListener('submit', event => {
   event.preventDefault();
@@ -240,6 +268,7 @@ $('reset-form').addEventListener('submit', event => {
     if (!state.resetToken) throw new Error('Hãy mở liên kết khôi phục trong email hoặc yêu cầu liên kết mới.');
     const data = Object.fromEntries(new FormData(event.target));
     if (data.password !== data.confirmPassword) throw new Error('Mật khẩu xác nhận không khớp.');
+    await csrf();
     const result = await api('/api/auth/recovery/reset', { method: 'POST', body: { ...data, token: state.resetToken } });
     state.resetToken = null; state.user = null; state.csrf = null;
     event.target.reset(); renderSession(); await csrf(); notify(result.message);

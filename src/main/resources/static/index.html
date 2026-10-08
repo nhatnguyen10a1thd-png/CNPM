@@ -44,12 +44,13 @@
           <form id="register-form">
             <label>Họ và tên<input name="fullName" required maxlength="150" autocomplete="name"></label>
             <label>Email<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
-            <label>Số điện thoại <span class="muted">(không bắt buộc)</span><input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>
+            <label>Số điện thoại <span class="muted">(không bắt buộc)</span><input name="phone" type="tel" maxlength="30" autocomplete="tel" aria-describedby="register-phone-hint"></label>
+            <p id="register-phone-hint" class="hint">9–15 chữ số; có thể thêm dấu +, khoảng trắng hoặc dấu phân cách.</p>
             <label>Mật khẩu<span class="password-field"><input id="register-password" name="password" type="password" required minlength="8" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).+" autocomplete="new-password"><button type="button" data-toggle-password="register-password" aria-label="Hiện mật khẩu">Hiện</button></span></label>
             <p class="hint">Ít nhất 8 ký tự, có chữ và số; tối đa 72 byte.</p>
             <label>Xác nhận mật khẩu<input name="confirmPassword" type="password" required maxlength="72" autocomplete="new-password"></label>
             <label class="check"><input name="termsAccepted" type="checkbox" required>Tôi đồng ý <button type="button" class="text-button" id="open-terms">điều khoản sử dụng</button></label>
-            <button class="primary" type="submit">Tạo tài khoản</button>
+            <button class="primary" type="submit" disabled>Tạo tài khoản</button>
           </form>
         </section>
         <section id="recovery-view" hidden>
