@@ -4,6 +4,8 @@ Status (2026-10-08): applied successfully to the configured Supabase project thr
 
 LUNEA uses Supabase **only as PostgreSQL**. Spring Boot handles authentication and sends recovery mail over its own SMTP settings. Do not use Supabase `anon`/`service_role` API keys as `DB_PASSWORD`.
 
+For the existing prepared schema, use `psql -X -v ON_ERROR_STOP=1 -v inventory_schema=lunea -f docs/database/01_inventory.sql`. This is a read-only inventory, distinct from bootstrap/migration. Supabase's database name is `postgres`; never run the destructive `test-postgres` profile against it.
+
 The fresh LUNEA schema is `lunea`, separate from Supabase's API-exposed `public` schema. `scripts/prepare-supabase-schema.ps1` derives `.local/supabase-init.sql` from the PostgreSQL/JPA test baseline. The script checks that the baseline contains no DML/drop statements, wraps all DDL in one transaction, refuses a nonempty `public` or existing `lunea` schema, creates the 38 LUNEA tables, revokes API-role access and enables RLS. It does **not** execute SQL. The generated file is ignored by Git and can be inspected before execution.
 
 For a **new** database only:

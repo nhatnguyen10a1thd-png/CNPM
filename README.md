@@ -50,6 +50,8 @@ $env:JAVA_HOME = 'C:/Program Files/Java/jdk-21.0.10'
 
 Tests mặc định dùng H2 riêng, không kết nối DB dev. PostgreSQL 16 test có profile `test-postgres`, yêu cầu DB riêng có tên kết thúc `_test`; xem [runbook DB](docs/database/README.md). Report/evidence ở [báo cáo phase 1–4](docs/PHASE_01_04_REPORT.md).
 
+Java 21 là baseline được hỗ trợ; đặt `JAVA_HOME` trước cả build và package, không dùng JDK mặc định khác để suy ra lỗi source. URL PostgreSQL test phải ghi rõ host và tên DB `_test`; query parameter không được thay database/service. Supabase dùng database `postgres`, schema `lunea`, chỉ chạy ứng dụng với `validate` và inventory read-only; không chạy profile test tạo/drop schema trên đó. Inventory DB cũ mặc định dùng `public`; inventory Supabase dùng `-v inventory_schema=lunea` theo runbook.
+
 ### PostgreSQL và email thực
 
 Cấu hình mặc định dùng PostgreSQL và `ddl-auto=validate`. Đặt `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; kiểm kê schema và áp migration thủ công theo [runbook](docs/database/README.md) trước khởi động. Không tự reset DB hay chạy Hibernate update trên dữ liệu cũ. Credential plaintext cũ không đăng nhập được; dùng recovery đã xác minh để đặt hash mới.
