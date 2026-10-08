@@ -3,10 +3,13 @@ package com.thinh.cosmetic.security;
 import com.thinh.cosmetic.domain.dto.request.account.PasswordResetRequest;
 import com.thinh.cosmetic.domain.dto.request.account.RegisterRequest;
 import com.thinh.cosmetic.domain.entity.account.AccountEntity;
+import com.thinh.cosmetic.domain.entity.account.EmployeeEntity;
+import com.thinh.cosmetic.domain.enums.ActiveStatus;
 import com.thinh.cosmetic.domain.enums.AccountStatus;
 import com.thinh.cosmetic.domain.enums.AccountType;
 import com.thinh.cosmetic.exception.BadRequestException;
 import com.thinh.cosmetic.repository.account.AccountRepository;
+import com.thinh.cosmetic.repository.account.EmployeeRepository;
 import com.thinh.cosmetic.repository.account.PasswordResetTokenRepository;
 import com.thinh.cosmetic.service.account.AccountService;
 import com.thinh.cosmetic.service.account.PasswordRecoveryService;
@@ -48,8 +51,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class PasswordRecoveryIntegrationTest {
     @Autowired PasswordRecoveryService recovery;
-    @Autowired PasswordResetTokenRepository tokens;
+    @MockitoSpyBean PasswordResetTokenRepository tokens;
     @MockitoSpyBean AccountRepository accounts;
+    @Autowired EmployeeRepository employees;
     @Autowired AccountService accountService;
     @Autowired PasswordEncoder encoder;
     @Autowired MockMvc mvc;
@@ -146,6 +150,21 @@ class PasswordRecoveryIntegrationTest {
     }
 
     @Test
+    void tokenJustBeforeExpirySucceedsAndAfterExpiryIsRejected() {
+        var before = account(AccountType.CUSTOMER);
+        var after = account(AccountType.CUSTOMER);
+        String first = request(before);
+        String second = request(after);
+        when(clock.instant()).thenReturn(NOW.plusSeconds(900).minusNanos(1_000));
+        reset(first, NEW);
+        assertThat(encoder.matches(NEW, accounts.findById(before.getId()).orElseThrow().getPasswordHash())).isTrue();
+        when(clock.instant()).thenReturn(NOW.plusSeconds(900).plusNanos(1_000));
+        assertThatThrownBy(() -> reset(second, NEW)).isInstanceOf(BadRequestException.class);
+        assertThat(encoder.matches(OLD, accounts.findById(after.getId()).orElseThrow().getPasswordHash())).isTrue();
+        assertThat(tokens.findByTokenHash(PasswordRecoveryService.hash(second)).orElseThrow().getConsumedAt()).isNull();
+    }
+
+    @Test
     void invalidSecretAndWeakOrMismatchedPasswordDoNotConsumeValidState() {
         var account = account(AccountType.CUSTOMER);
         String raw = request(account);
@@ -213,6 +232,19 @@ class PasswordRecoveryIntegrationTest {
     }
 
     @Test
+    void failedReplacementDeliveryPreservesPreviousValidLink() {
+        var account = account(AccountType.CUSTOMER);
+        String previous = request(account);
+        long count = tokens.count();
+        doThrow(new RecoveryDeliveryException()).when(delivery).send(eq(account.getEmail()), anyString(), any());
+        assertThatThrownBy(() -> recovery.request(account.getEmail(), ip())).isInstanceOf(RecoveryDeliveryException.class);
+        assertThat(tokens.count()).isEqualTo(count);
+        assertThat(tokens.findByTokenHash(PasswordRecoveryService.hash(previous)).orElseThrow().getConsumedAt()).isNull();
+        reset(previous, NEW);
+        assertThat(encoder.matches(NEW, accounts.findById(account.getId()).orElseThrow().getPasswordHash())).isTrue();
+    }
+
+    @Test
     void lateCredentialWriteFailureRollsBackConsumptionAndHash() {
         var account = account(AccountType.CUSTOMER);
         String raw = request(account);
@@ -223,6 +255,62 @@ class PasswordRecoveryIntegrationTest {
         assertThat(persisted.getCredentialsVersion()).isZero();
         assertThat(tokens.findByTokenHash(PasswordRecoveryService.hash(raw)).orElseThrow().getConsumedAt()).isNull();
         verify(delivery, never()).invalidate(any());
+    }
+
+    @Test
+    void lateTokenFlushFailureRollsBackAlreadyFlushedCredentialAndAllowsRetry() {
+        var account = account(AccountType.CUSTOMER);
+        String raw = request(account);
+        doThrow(new IllegalStateException("Test token persistence failure")).when(tokens).saveAndFlush(
+                argThat(candidate -> candidate != null && candidate.getConsumedAt() != null
+                        && PasswordRecoveryService.hash(raw).equals(candidate.getTokenHash())));
+        assertThatThrownBy(() -> reset(raw, NEW)).isInstanceOf(IllegalStateException.class);
+        var persisted = accounts.findById(account.getId()).orElseThrow();
+        assertThat(encoder.matches(OLD, persisted.getPasswordHash())).isTrue();
+        assertThat(persisted.getCredentialsVersion()).isZero();
+        assertThat(tokens.findByTokenHash(PasswordRecoveryService.hash(raw)).orElseThrow().getConsumedAt()).isNull();
+        verify(delivery, never()).invalidate(any());
+        org.mockito.Mockito.reset(tokens);
+        reset(raw, NEW);
+        assertThat(accounts.findById(account.getId()).orElseThrow().getCredentialsVersion()).isEqualTo(1);
+    }
+
+    @Test
+    void requestIpLimitCountsUnknownIdentifiersAndResetsAtExactWindowBoundary() {
+        var account = account(AccountType.CUSTOMER);
+        String clientIp = ip();
+        long count = tokens.count();
+        for (int attempt = 0; attempt < 10; attempt++) {
+            recovery.request("missing-" + UUID.randomUUID() + "@lunea.test", clientIp);
+        }
+        recovery.request(account.getEmail(), clientIp);
+        verify(delivery, never()).send(anyString(), anyString(), any());
+        assertThat(tokens.count()).isEqualTo(count);
+        when(clock.instant()).thenReturn(NOW.plusSeconds(900));
+        recovery.request(account.getEmail(), clientIp);
+        verify(delivery).send(eq(account.getEmail()), anyString(), any());
+    }
+
+    @Test
+    void realEmployeeRecoveryKeepsProfileAndGrantsAndRevokesSession() throws Exception {
+        var account = account(AccountType.EMPLOYEE);
+        var employee = employees.saveAndFlush(EmployeeEntity.builder().account(account).fullName("Recovery staff")
+                .internalEmail(account.getEmail()).status(ActiveStatus.ACTIVE).build());
+        var loggedIn = login(account.getEmail(), OLD, csrf(null), 200);
+        var before = json.readTree(loggedIn.getResponse().getContentAsString());
+        MockHttpSession session = (MockHttpSession) loggedIn.getRequest().getSession();
+        reset(request(account), NEW);
+        mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isUnauthorized());
+        assertThat(session.isInvalid()).isTrue();
+        login(account.getEmail(), OLD, csrf(null), 401);
+        var fresh = login(account.getEmail(), NEW, csrf(null), 200);
+        var after = json.readTree(fresh.getResponse().getContentAsString());
+        assertThat(after.get("employeeId").asLong()).isEqualTo(employee.getId());
+        assertThat(after.get("roles")).isEqualTo(before.get("roles"));
+        assertThat(after.get("permissions")).isEqualTo(before.get("permissions"));
+        assertThat(after.get("storeIds")).isEqualTo(before.get("storeIds"));
+        assertThat(after.get("customerId").isNull()).isTrue();
+        assertThat(employees.findById(employee.getId()).orElseThrow().getStatus()).isEqualTo(ActiveStatus.ACTIVE);
     }
 
     @Test
