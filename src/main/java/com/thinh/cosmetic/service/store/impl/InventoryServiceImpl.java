@@ -11,6 +11,7 @@ import com.thinh.cosmetic.service.store.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canStore('INVENTORY_READ', #p0)")
     public List<InventoryResponse> getByStore(Long storeId) {
         return inventoryRepository.findByStoreId(storeId).stream()
                 .map(this::toResponse).toList();
@@ -38,6 +40,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canStore('INVENTORY_READ', #p0)")
     public InventoryResponse getByStoreAndSku(Long storeId, Long skuId) throws Exception {
         InventoryEntity inv = inventoryRepository.findByStoreIdAndSkuId(storeId, skuId)
                 .orElseThrow(() -> new Exception("Inventory not found for store=" + storeId + " sku=" + skuId));
@@ -45,6 +48,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @PreAuthorize("@permissionPolicy.canStore('INVENTORY_MANAGE', #p0.storeId) and #p1 == @permissionPolicy.employeeId()")
     public InventoryResponse adjustStock(InventoryAdjustmentRequest request, Long employeeId) throws Exception {
         InventoryEntity inv = inventoryRepository.findByStoreIdAndSkuId(request.getStoreId(), request.getSkuId())
                 .orElseThrow(() -> new Exception("Inventory record not found"));
@@ -69,6 +73,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canStore('INVENTORY_READ', #p0)")
     public List<InventoryResponse> getLowStockItems(Long storeId) {
         return inventoryRepository.findLowStock(storeId).stream()
                 .map(this::toResponse).toList();
@@ -76,6 +81,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @PreAuthorize("@permissionPolicy.canStore('INVENTORY_READ', #p0)")
     public Integer getAvailableStock(Long storeId, Long skuId) {
         return inventoryRepository.findByStoreIdAndSkuId(storeId, skuId)
                 .map(i -> Math.max(0, i.getActualStock() - i.getHeldQuantity()))

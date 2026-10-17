@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ public class ProductRestController {
 
     @PreAuthorize("hasAuthority('CATALOG_MANAGE')")
     @PostMapping
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<ProductResponse> create(
             @Valid @RequestBody ProductRequest request
     ) throws Exception {
@@ -63,6 +65,7 @@ public class ProductRestController {
 
     @PreAuthorize("hasAuthority('CATALOG_MANAGE')")
     @PutMapping(path = "/{id}")
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<ProductResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request
@@ -74,6 +77,7 @@ public class ProductRestController {
 
     @PreAuthorize("hasAuthority('CATALOG_MANAGE')")
     @DeleteMapping(path = "/{id}")
+    @PreAuthorize("@permissionPolicy.has('CATALOG_MANAGE')")
     public ResponseEntity<Void> delete(
             @PathVariable Long id
     ) throws Exception {

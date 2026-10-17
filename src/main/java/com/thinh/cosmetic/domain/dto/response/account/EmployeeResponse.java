@@ -19,4 +19,7 @@ public class EmployeeResponse {
     private ActiveStatus status;
     private List<String> roles;
     private List<String> stores;
+    private List<Long> roleIds;
+    private List<Long> storeIds;
+    private Long primaryStoreId;
 }
