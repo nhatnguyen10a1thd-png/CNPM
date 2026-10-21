@@ -409,17 +409,35 @@ const LUNEA = (function () {
                 });
             }, {
                 root: null,
-                threshold: 0.12,
-                rootMargin: '0px 0px -40px 0px'
+                threshold: 0.01,
+                rootMargin: '0px 0px 60px 0px'
             });
 
-            revealElements.forEach(el => revealObserver.observe(el));
+            const winH = window.innerHeight || document.documentElement.clientHeight || 800;
+            revealElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                // If element is already in or near viewport upon page load, reveal immediately
+                if (rect.top < winH + 60 && rect.bottom > 0) {
+                    el.classList.add('is-revealed');
+                } else {
+                    revealObserver.observe(el);
+                }
+            });
+
+            // Safety timeout: ensure all elements become visible even if scroll events or intersection are delayed
+            setTimeout(() => {
+                revealElements.forEach(el => {
+                    if (!el.classList.contains('is-revealed')) {
+                        el.classList.add('is-revealed');
+                    }
+                });
+            }, 1200);
         } else {
             // Fallback for older browsers
             revealElements.forEach(el => el.classList.add('is-revealed'));
         }
 
-        // 3. Subtle Hero & Auth Moon Cursor Parallax
+        // 3. Subtle Hero & Auth Moon Cursor Parallax (Optimized with RAF & rect caching - zero layout thrashing)
         const parallaxPairs = [
             { container: document.querySelector('.hero-visual'), target: document.querySelector('.hero-visual .moon-image-wrapper') },
             { container: document.querySelector('.auth-story-col'), target: document.querySelector('.auth-moon-backdrop .moon-image-wrapper, .auth-moon-visual .moon-image-wrapper') }
@@ -427,18 +445,69 @@ const LUNEA = (function () {
 
         parallaxPairs.forEach(({ container, target }) => {
             if (container && target) {
+                let rect = null;
+                let rafId = null;
+
+                const updateRect = () => {
+                    rect = container.getBoundingClientRect();
+                };
+
+                container.addEventListener('mouseenter', updateRect, { passive: true });
+
                 container.addEventListener('mousemove', (e) => {
-                    const rect = container.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / rect.width - 0.5;
-                    const y = (e.clientY - rect.top) / rect.height - 0.5;
-                    target.style.transform = `translate(${x * 16}px, ${y * 16}px) rotate(${x * 4}deg)`;
-                });
+                    if (!rect) updateRect();
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        const x = (e.clientX - rect.left) / rect.width - 0.5;
+                        const y = (e.clientY - rect.top) / rect.height - 0.5;
+                        target.style.transform = `translate3d(${x * 14}px, ${y * 14}px, 0) rotate(${x * 3}deg)`;
+                    });
+                }, { passive: true });
 
                 container.addEventListener('mouseleave', () => {
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rect = null;
                     target.style.transform = '';
                 });
             }
         });
+    }
+
+    // Debounce Utility (WCAG & Front-End Checklist standard)
+    function debounce(func, wait = 300) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Mobile Navigation Drawer Toggle
+    function toggleMobileDrawer(open) {
+        const drawer = document.getElementById('mobileDrawer');
+        const overlay = document.getElementById('mobileDrawerOverlay');
+        const hamburger = document.getElementById('mobileHamburgerBtn');
+        if (!drawer) return;
+        const isOpen = open !== undefined ? open : !drawer.classList.contains('open');
+        if (isOpen) {
+            drawer.classList.add('open');
+            if (overlay) overlay.classList.add('open');
+            if (hamburger) {
+                hamburger.setAttribute('aria-expanded', 'true');
+                hamburger.classList.add('active');
+            }
+            document.body.style.overflow = 'hidden';
+            const firstFocusable = drawer.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (firstFocusable) firstFocusable.focus();
+        } else {
+            drawer.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+            if (hamburger) {
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.classList.remove('active');
+            }
+            document.body.style.overflow = '';
+        }
     }
 
     // -------------------------------------------------------------
@@ -761,6 +830,10 @@ const LUNEA = (function () {
         toggleTheme,
         initGSAP,
         initModalAccessibility,
-        initTabAccessibility
+        initTabAccessibility,
+        debounce,
+        toggleMobileDrawer,
+        openMobileDrawer: () => toggleMobileDrawer(true),
+        closeMobileDrawer: () => toggleMobileDrawer(false)
     };
 })();

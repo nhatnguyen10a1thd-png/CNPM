@@ -35,6 +35,8 @@
                     </div>
 
                     <form id="filterForm" th:action="@{/products}" method="GET">
+                        <!-- Reset to Page 0 on Filter Change -->
+                        <input type="hidden" name="page" value="0">
                         <!-- Preserve Sort -->
                         <input type="hidden" name="sortBy" th:value="${sortBy}">
 
@@ -113,7 +115,9 @@
                     <!-- Top Bar: Result Count + Sort Dropdown -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border-subtle); flex-wrap: wrap; gap: 12px;">
                         <div style="font-size: 0.92rem; color: var(--color-text-secondary);">
-                            <span id="productCount" th:text="${products != null ? products.size() : 0}" style="font-weight: 600; color: var(--color-text-primary);">8</span> sản phẩm
+                            <span id="productCount" th:text="${totalProducts != null ? totalProducts : (products != null ? products.size() : 0)}" style="font-weight: 600; color: var(--color-text-primary);">8</span> sản phẩm
+                            <span th:if="${totalPages != null and totalPages > 1}" style="font-size: 0.82rem; color: var(--color-text-muted); margin-left: 6px;" 
+                                  th:text="'(Trang ' + ${currentPage + 1} + ' / ' + ${totalPages} + ')'"></span>
                             <span th:if="${keyword != null and !keyword.isBlank()}" th:text="' cho từ khóa \'' + ${keyword} + '\''" style="color: var(--color-gold-light);"></span>
                         </div>
 
@@ -131,7 +135,7 @@
                     </div>
 
                     <!-- Products Grid (Matching Page 2 PDF) -->
-                    <div id="productGrid" th:if="${products != null and !products.isEmpty()}" class="product-luxury-grid stagger-cards" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));">
+                    <div id="productGrid" th:if="${products != null and !products.isEmpty()}" class="product-luxury-grid" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));">
                         <div th:each="p : ${products}" class="luxury-product-card product-item-card"
                              th:data-id="${p.id}"
                              th:data-name="${p.name}"
@@ -190,6 +194,43 @@
                         </div>
                     </div>
 
+                    <!-- Luxury Pagination Navigation -->
+                    <nav th:if="${totalPages != null and totalPages > 1}" class="lunea-pagination-wrapper" aria-label="Phân trang sản phẩm">
+                        <!-- Nút trang trước -->
+                        <a th:if="${hasPrevious}"
+                           th:href="@{/products(page=${currentPage - 1}, keyword=${keyword}, brandId=${brandId}, categoryId=${categoryId}, skinType=${skinType}, concern=${concern}, priceRange=${priceRange}, sortBy=${sortBy})}"
+                           class="pagination-btn pagination-prev" aria-label="Trang trước">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                        <span th:unless="${hasPrevious}" class="pagination-btn pagination-disabled" aria-disabled="true" aria-label="Trang trước (đã ở đầu)">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </span>
+
+                        <!-- Các số trang -->
+                        <th:block th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}">
+                            <a th:if="${pageNum != currentPage}"
+                               th:href="@{/products(page=${pageNum}, keyword=${keyword}, brandId=${brandId}, categoryId=${categoryId}, skinType=${skinType}, concern=${concern}, priceRange=${priceRange}, sortBy=${sortBy})}"
+                               th:text="${pageNum + 1}"
+                               class="pagination-btn pagination-num"
+                               th:aria-label="'Đến trang ' + ${pageNum + 1}">1</a>
+                            <span th:if="${pageNum == currentPage}"
+                                  th:text="${pageNum + 1}"
+                                  class="pagination-btn pagination-num active" 
+                                  aria-current="page"
+                                  th:aria-label="'Trang ' + ${pageNum + 1} + ' (hiện tại)'">1</span>
+                        </th:block>
+
+                        <!-- Nút trang kế tiếp -->
+                        <a th:if="${hasNext}"
+                           th:href="@{/products(page=${currentPage + 1}, keyword=${keyword}, brandId=${brandId}, categoryId=${categoryId}, skinType=${skinType}, concern=${concern}, priceRange=${priceRange}, sortBy=${sortBy})}"
+                           class="pagination-btn pagination-next" aria-label="Trang sau">
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </a>
+                        <span th:unless="${hasNext}" class="pagination-btn pagination-disabled" aria-disabled="true" aria-label="Trang sau (đã ở cuối)">
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </span>
+                    </nav>
+
                     <!-- Empty State -->
                     <div id="noProductsAlert" class="card-shell" th:if="${products == null or products.isEmpty()}" style="margin-top: 24px;">
                         <div class="card-core" style="text-align: center; padding: 48px;">
@@ -213,6 +254,7 @@
         function handleSortChange(sortVal) {
             const url = new URL(window.location.href);
             url.searchParams.set('sortBy', sortVal);
+            url.searchParams.set('page', '0');
             window.location.href = url.toString();
         }
     </script>

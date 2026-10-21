@@ -52,12 +52,39 @@ public class ProductPageController {
         model.addAttribute("sortBy", sortBy != null ? sortBy : "newest");
         model.addAttribute("currentPage", page);
         model.addAttribute("brands", brandService.getAll());
-        model.addAttribute("categories", categoryService.getAll());
+        List<com.thinh.cosmetic.domain.dto.response.catalog.CategoryResponse> categories = categoryService.getAll();
+        model.addAttribute("categories", categories);
 
-        List<ProductResponse> products = productService.searchAndFilter(
+        if (categoryId != null) {
+            categories.stream()
+                    .filter(c -> categoryId.equals(c.getId()))
+                    .findFirst()
+                    .ifPresent(c -> model.addAttribute("category", c));
+        }
+
+        List<ProductResponse> allProducts = productService.searchAndFilter(
                 keyword, brandId, categoryId, skinType, concern, priceRange, sortBy
         );
-        model.addAttribute("products", products);
+
+        int totalElements = allProducts != null ? allProducts.size() : 0;
+        int pageSize = 12;
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        if (totalPages == 0) totalPages = 1;
+        int validPage = Math.max(0, Math.min(page != null ? page : 0, totalPages - 1));
+
+        int fromIndex = validPage * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        List<ProductResponse> pagedProducts = (fromIndex <= totalElements && allProducts != null)
+                ? allProducts.subList(fromIndex, toIndex)
+                : List.of();
+
+        model.addAttribute("products", pagedProducts);
+        model.addAttribute("totalProducts", totalElements);
+        model.addAttribute("currentPage", validPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("hasPrevious", validPage > 0);
+        model.addAttribute("hasNext", validPage < totalPages - 1);
 
         if (principal != null) {
             model.addAttribute("currentUser", principal);
