@@ -69,7 +69,7 @@
                     <div class="detail-variant-section">
                         <div class="detail-variant-label">Dung tích</div>
                         <div class="variant-pill-row">
-                            <div th:if="${product.skus != null and !product.skus.isEmpty()}" style="display: flex; gap: 10px;">
+                            <div th:if="${product.skus != null and !product.skus.isEmpty()}" style="display: flex; gap: 10px; flex-wrap: wrap;">
                                 <button type="button" th:each="sku, iter : ${product.skus}" 
                                         class="variant-pill" 
                                         th:classappend="${iter.first} ? 'active' : ''"
@@ -127,7 +127,7 @@
             </div>
 
             <!-- Tabs Section: Thông tin sản phẩm, Thành phần, Hướng dẫn sử dụng, Đánh giá (Page 3 PDF) -->
-            <div th:if="${product != null}" class="product-tabs-section reveal-on-scroll" style="margin-top: 56px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 36px;">
+            <div th:if="${product != null}" class="product-tabs-section reveal-on-scroll" style="margin-top: 56px; border-top: 1px solid var(--color-border-subtle); padding-top: 36px;">
                 <div role="tablist" aria-label="Thông tin chi tiết sản phẩm" style="display: flex; gap: 32px; border-bottom: 1px solid var(--color-border-subtle); margin-bottom: 28px;">
                     <button type="button" class="tab-btn active" role="tab" id="tab-btn-info" aria-controls="tab-info" aria-selected="true" onclick="switchTab('tab-info', this)" 
                             style="background: none; border: none; padding: 12px 0; color: var(--color-text-primary); font-size: 0.95rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--color-gold-primary);">
@@ -189,7 +189,7 @@
                 <div id="tab-reviews" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-reviews" tabindex="0" style="display: none; max-width: 680px;" hidden>
                     <h4 style="font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 16px;">Đánh giá từ khách hàng</h4>
                     <div th:if="${reviews != null and !reviews.isEmpty()}" style="display: flex; flex-direction: column; gap: 14px;">
-                        <div th:each="r : ${reviews}" style="padding: 20px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--color-border-subtle);">
+                        <div th:each="r : ${reviews}" style="padding: 20px; background: var(--color-bg-subtle); border-radius: 8px; border: 1px solid var(--color-border-subtle);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="display: flex; gap: 4px; color: var(--color-gold-primary);">
                                     <i th:each="star : ${#numbers.sequence(1, r.rating)}" class="bi bi-star-fill"></i>
@@ -203,7 +203,7 @@
                             <span style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 8px; display: block;">— <strong th:text="${r.customerName != null ? r.customerName : 'Khách hàng LUNEA'}">Minh Anh</strong> <span style="color: var(--color-success); margin-left: 6px;"><i class="bi bi-patch-check-fill"></i> Đã mua hàng</span></span>
                         </div>
                     </div>
-                    <div th:if="${reviews == null or reviews.isEmpty()}" style="padding: 24px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed var(--color-border-subtle); text-align: center; color: var(--color-text-muted); font-size: 0.88rem;">
+                    <div th:if="${reviews == null or reviews.isEmpty()}" style="padding: 24px; background: var(--color-bg-subtle); border-radius: 8px; border: 1px dashed var(--color-border-subtle); text-align: center; color: var(--color-text-muted); font-size: 0.88rem;">
                         <i class="bi bi-chat-square-heart" style="font-size: 1.6rem; color: var(--color-gold-primary); display: block; margin-bottom: 8px;"></i>
                         Chưa có đánh giá nào cho sản phẩm này. Khách hàng đã mua đơn hàng thành công có thể gửi đánh giá từ trang Đơn Hàng Của Tôi.
                     </div>

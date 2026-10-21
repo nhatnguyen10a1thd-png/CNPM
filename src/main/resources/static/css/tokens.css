@@ -250,3 +250,40 @@
     color: #fb7185;
     border: 1px solid rgba(244, 63, 94, 0.35);
 }
+
+/* Light Theme Status Pills (High Contrast for Moonlight Pearl Canvas) */
+[data-theme="light"] .status-pill.pending {
+    background: #fef3c7;
+    color: #b45309;
+    border-color: rgba(180, 83, 9, 0.3);
+}
+
+[data-theme="light"] .status-pill.confirmed {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: rgba(3, 105, 161, 0.3);
+}
+
+[data-theme="light"] .status-pill.preparing {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border-color: rgba(126, 34, 206, 0.3);
+}
+
+[data-theme="light"] .status-pill.shipping {
+    background: #ffedd5;
+    color: #c2410c;
+    border-color: rgba(194, 65, 12, 0.3);
+}
+
+[data-theme="light"] .status-pill.completed {
+    background: #d1fae5;
+    color: #047857;
+    border-color: rgba(4, 120, 87, 0.3);
+}
+
+[data-theme="light"] .status-pill.cancelled {
+    background: #ffe4e6;
+    color: #be123c;
+    border-color: rgba(190, 18, 60, 0.3);
+}

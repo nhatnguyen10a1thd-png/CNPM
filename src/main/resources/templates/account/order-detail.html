@@ -58,12 +58,12 @@
 
                 <!-- Cancelled State Banner (if order is CANCELLED) -->
                 <div th:if="${order.status.name() == 'CANCELLED'}" 
-                     style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: var(--radius-sm); padding: 22px 28px; margin-bottom: 32px; display: flex; align-items: center; gap: 18px;">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(244, 63, 94, 0.15); color: #fb7185; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+                     class="lunea-alert danger" style="padding: 22px 28px; margin-bottom: 32px; border-radius: var(--radius-sm); gap: 18px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-danger-bg); color: var(--color-danger); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
                         <i class="bi bi-x-circle-fill"></i>
                     </div>
                     <div>
-                        <h3 style="margin: 0 0 4px 0; color: #fb7185; font-size: 1.15rem; font-weight: 700;">ĐƠN HÀNG ĐÃ BỊ HỦY</h3>
+                        <h3 style="margin: 0 0 4px 0; color: var(--color-danger); font-size: 1.15rem; font-weight: 700;">ĐƠN HÀNG ĐÃ BỊ HỦY</h3>
                         <p style="margin: 0; font-size: 0.88rem; color: var(--color-text-secondary); line-height: 1.5;">
                             Đơn hàng đã được hủy thành công. Toàn bộ số lượng tồn kho giữ trước đã được giải phóng an toàn trở lại kệ hàng chi nhánh và lượt sử dụng voucher khuyến mãi đã được hoàn lại.
                         </p>
@@ -71,14 +71,13 @@
                 </div>
 
                 <!-- 5-Step Order Progress Stepper (Synchronized 1-1 with Admin Back-office) -->
-                <div th:if="${order.status.name() != 'CANCELLED'}" 
-                     style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 36px 32px; margin-bottom: 32px; box-shadow: var(--shadow-card);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+                <div th:if="${order.status.name() != 'CANCELLED'}" class="order-stepper-card">
+                    <div class="order-stepper-track">
                         <!-- Step Line -->
-                        <div style="position: absolute; top: 16px; left: 8%; right: 8%; height: 2px; background: var(--color-border-subtle); z-index: 0;"></div>
+                        <div class="stepper-track-line"></div>
 
                         <!-- Step 1: Đặt hàng (PENDING) -->
-                        <div style="position: relative; z-index: 1; text-align: center; flex: 1;">
+                        <div class="order-step-node">
                             <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-gold-primary); color: #080a0f; display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 0 auto 8px;">
                                 <i class="bi bi-receipt" style="font-size: 0.85rem;"></i>
                             </div>
@@ -86,7 +85,7 @@
                         </div>
 
                         <!-- Step 2: Đã xác nhận (CONFIRMED) -->
-                        <div style="position: relative; z-index: 1; text-align: center; flex: 1;">
+                        <div class="order-step-node">
                             <div style="width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700;"
                                  th:styleappend="${order.status.name() == 'CONFIRMED' or order.status.name() == 'PREPARING' or order.status.name() == 'SHIPPING' or order.status.name() == 'COMPLETED'} ? 'background: var(--color-gold-primary); color: #080a0f;' : 'background: var(--color-bg-elevated); color: var(--color-text-muted); border: 1px solid var(--color-border-subtle);'">
                                 <i class="bi bi-check-lg" style="font-size: 0.85rem;"></i>
@@ -96,7 +95,7 @@
                         </div>
 
                         <!-- Step 3: Đang đóng gói (PREPARING) -->
-                        <div style="position: relative; z-index: 1; text-align: center; flex: 1;">
+                        <div class="order-step-node">
                             <div style="width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700;"
                                  th:styleappend="${order.status.name() == 'PREPARING' or order.status.name() == 'SHIPPING' or order.status.name() == 'COMPLETED'} ? 'background: var(--color-gold-primary); color: #080a0f;' : 'background: var(--color-bg-elevated); color: var(--color-text-muted); border: 1px solid var(--color-border-subtle);'">
                                 <i class="bi bi-box-seam" style="font-size: 0.85rem;"></i>
@@ -106,7 +105,7 @@
                         </div>
 
                         <!-- Step 4: Đang giao hàng (SHIPPING) -->
-                        <div style="position: relative; z-index: 1; text-align: center; flex: 1;">
+                        <div class="order-step-node">
                             <div style="width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700;"
                                  th:styleappend="${order.status.name() == 'SHIPPING' or order.status.name() == 'COMPLETED'} ? 'background: var(--color-gold-primary); color: #080a0f;' : 'background: var(--color-bg-elevated); color: var(--color-text-muted); border: 1px solid var(--color-border-subtle);'">
                                 <i class="bi bi-truck" style="font-size: 0.85rem;"></i>
@@ -116,7 +115,7 @@
                         </div>
 
                         <!-- Step 5: Hoàn thành (COMPLETED) -->
-                        <div style="position: relative; z-index: 1; text-align: center; flex: 1;">
+                        <div class="order-step-node">
                             <div style="width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: 700;"
                                  th:styleappend="${order.status.name() == 'COMPLETED'} ? 'background: var(--color-gold-primary); color: #080a0f;' : 'background: var(--color-bg-elevated); color: var(--color-text-muted); border: 1px solid var(--color-border-subtle);'">
                                 <i class="bi bi-check2-all" style="font-size: 0.85rem;"></i>
@@ -128,7 +127,7 @@
                 </div>
 
                 <!-- Shipping & Payment 2-Column Info (Page 12 PDF) -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+                <div class="order-info-2col">
                     <!-- Thông tin giao hàng -->
                     <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 24px; box-shadow: var(--shadow-card);">
                         <h3 style="font-family: var(--font-serif); font-size: 1.15rem; color: var(--color-text-primary); margin-bottom: 16px;">
@@ -233,12 +232,12 @@
 
                 <!-- Return Request Status Banner (if exists) -->
                 <div th:if="${returnRequests != null and !returnRequests.isEmpty()}" 
-                     style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 20px 24px; margin-bottom: 24px;">
+                     class="lunea-alert warning" style="padding: 20px 24px; margin-bottom: 24px; border-radius: var(--radius-sm); flex-direction: column; align-items: stretch;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <div style="font-weight: 600; color: #fbbf24; font-size: 0.95rem;">
+                        <div style="font-weight: 600; color: var(--color-warning); font-size: 0.95rem;">
                             <i class="bi bi-arrow-return-left" style="margin-right: 6px;"></i>Yêu cầu đổi / trả hàng đã được gửi
                         </div>
-                        <span th:each="ret : ${returnRequests}" class="badge-stock" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.78rem;"
+                        <span th:each="ret : ${returnRequests}" class="status-pill pending"
                               th:text="'Trạng thái: ' + ${ret.status}">
                             Trạng thái: REQUESTED
                         </span>

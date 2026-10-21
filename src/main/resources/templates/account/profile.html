@@ -17,9 +17,9 @@
             </div>
 
             <!-- Account 2-Column Layout -->
-            <div style="display: grid; grid-template-columns: 260px 1fr; gap: 48px; align-items: start;" class="reveal-on-scroll">
+            <div class="account-page-layout reveal-on-scroll">
                 <!-- Left Sidebar Navigation -->
-                <aside style="display: flex; flex-direction: column; gap: 24px;">
+                <aside class="account-sidebar">
                     <!-- User Header Card -->
                     <div style="display: flex; align-items: center; gap: 14px; background: var(--color-bg-card); padding: 18px; border-radius: var(--radius-sm); border: 1px solid var(--color-border-subtle);">
                         <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-gold-primary); color: #080a0f; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700;"
@@ -39,8 +39,7 @@
                     </div>
 
                     <!-- Sidebar Links -->
-                    <!-- Sidebar Links -->
-                    <nav role="tablist" aria-label="Hồ sơ tài khoản" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem;">
+                    <nav role="tablist" aria-label="Hồ sơ tài khoản" class="account-nav-list">
                         <button type="button" role="tab" id="btnTabProfile" aria-controls="tab-profile" aria-selected="true" onclick="switchAccountTab('tab-profile', this)"
                                 class="account-nav-btn active">
                             <i class="bi bi-person"></i>

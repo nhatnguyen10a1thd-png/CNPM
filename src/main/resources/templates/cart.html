@@ -33,39 +33,37 @@
 
             <!-- If Cart has items (Page 8 PDF) -->
             <div id="cartContentWrap" th:if="${cart != null and cart.items != null and !cart.items.isEmpty()}" 
-                 style="display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: start;" class="reveal-on-scroll">
+                 class="cart-layout-grid reveal-on-scroll">
                 <!-- Cart Items List (Left) -->
-                <div>
+                <div class="cart-items-column">
                     <!-- Table Header -->
-                    <div style="display: grid; grid-template-columns: 1fr 140px 140px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted); font-weight: 600;">
+                    <div class="cart-table-header">
                         <div>SẢN PHẨM</div>
                         <div style="text-align: center;">SỐ LƯỢNG</div>
                         <div style="text-align: right;">THÀNH TIỀN</div>
                     </div>
 
                     <!-- Cart Item Rows -->
-                    <div id="cartItemsList" style="display: flex; flex-direction: column;">
-                        <div th:each="item : ${cart.items}" class="cart-item-row" th:id="'cart-item-' + ${item.id}"
-                             style="display: grid; grid-template-columns: 80px 1fr 140px 140px; gap: 20px; align-items: center; padding: 24px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div id="cartItemsList" class="cart-items-container">
+                        <div th:each="item : ${cart.items}" class="cart-item-row" th:id="'cart-item-' + ${item.id}">
                             <!-- Thumbnail -->
-                            <div style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); display: flex; align-items: center; justify-content: center; padding: 6px;">
+                            <div class="cart-item-thumb">
                                 <img th:src="${item.imageUrl}" src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600" 
-                                     th:alt="${item.productName}" width="80" height="80" loading="lazy" decoding="async" style="max-height: 90%; width: auto; object-fit: contain;">
+                                     th:alt="${item.productName}" width="80" height="80" loading="lazy" decoding="async">
                             </div>
 
                             <!-- Product Info -->
-                            <div>
-                                <span class="product-brand-tag" style="font-size: 0.72rem; color: var(--color-text-muted); letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 2px;">LUNEA</span>
-                                <h4 style="font-family: var(--font-sans); font-size: 0.95rem; font-weight: 500; line-height: 1.4; color: var(--color-text-primary); margin-bottom: 4px;" 
-                                    th:text="${item.productName}">Hyalu B5 Serum</h4>
-                                <div style="font-size: 0.8rem; color: var(--color-text-muted);">
+                            <div class="cart-item-info">
+                                <span class="product-brand-tag">LUNEA</span>
+                                <h4 class="cart-item-title" th:text="${item.productName}">Hyalu B5 Serum</h4>
+                                <div class="cart-item-meta">
                                     <span th:text="${item.variantName}">30 ml</span> · 
                                     <span th:text="${#numbers.formatDecimal(item.price, 0, 'POINT', 0, 'COMMA')} + ' ₫'">892.000 ₫</span>
                                 </div>
                             </div>
 
                             <!-- Quantity Stepper -->
-                            <div style="display: flex; justify-content: center;">
+                            <div class="cart-item-stepper-wrap">
                                 <div class="qty-stepper">
                                     <button type="button" class="qty-btn" aria-label="Giảm số lượng" th:onclick="'changeQty(' + ${item.id} + ', -1)'">−</button>
                                     <input type="number" class="qty-input" th:id="'input-qty-' + ${item.id}" 
@@ -77,14 +75,14 @@
                             </div>
 
                             <!-- Subtotal & Remove -->
-                            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px;">
-                                <span style="font-size: 1rem; font-weight: 600; color: var(--color-text-primary);" 
+                            <div class="cart-item-subtotal-wrap">
+                                <span class="cart-item-subtotal-price" 
                                       th:id="'subtotal-' + ${item.id}"
                                       th:text="${#numbers.formatDecimal(item.subtotal, 0, 'POINT', 0, 'COMMA')} + ' ₫'">
                                     892.000 ₫
                                 </span>
                                 <button type="button" th:onclick="'removeItem(' + ${item.id} + ')'" 
-                                        style="background: none; border: none; color: var(--color-text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px;"
+                                        class="cart-item-remove-btn"
                                         title="Xóa mặt hàng khỏi giỏ hàng"
                                         aria-label="Xóa mặt hàng khỏi giỏ hàng">
                                     ✕
@@ -101,7 +99,7 @@
                 </div>
 
                 <!-- Order Summary (Right) (Page 8 PDF) -->
-                <aside style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 28px 24px;">
+                <aside class="cart-summary-aside">
                     <h3 style="font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; margin-bottom: 24px; color: var(--color-text-primary);">
                         Tóm tắt đơn hàng
                     </h3>

@@ -64,6 +64,14 @@
             </li>
         </ul>
 
+        <!-- Mobile Hamburger Button -->
+        <button type="button" id="mobileHamburgerBtn" class="mobile-hamburger-btn" aria-label="Mở danh mục điều hướng"
+            aria-expanded="false" aria-controls="mobileDrawer" onclick="LUNEA.toggleMobileDrawer()">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+        </button>
+
         <!-- Right Side: Search, Wishlist, Account, Cart -->
         <div class="nav-actions">
             <!-- Search Input -->
@@ -147,6 +155,87 @@
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobileDrawerOverlay" class="mobile-drawer-overlay" onclick="LUNEA.closeMobileDrawer()"></div>
+
+    <!-- Mobile Drawer Navigation -->
+    <aside id="mobileDrawer" class="mobile-nav-drawer" aria-label="Menu điều hướng trên thiết bị di động">
+        <div class="mobile-drawer-header">
+            <div class="brand-logo">
+                <span class="brand-emblem-crescent">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" fill="url(#headerGoldGrad)" stroke="#fae8a4" stroke-width="1.2" /></svg>
+                </span>
+                <span class="brand-title-text" style="font-size: 1.15rem;">LUNEA</span>
+            </div>
+            <button type="button" class="mobile-drawer-close" aria-label="Đóng menu" onclick="LUNEA.closeMobileDrawer()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="mobile-drawer-body">
+            <!-- Search Form on Mobile Drawer -->
+            <form th:action="@{/products}" method="GET" class="mobile-drawer-search" role="search">
+                <input type="text" name="keyword" class="form-control-lunea" placeholder="Tìm sản phẩm, thương hiệu..." th:value="${keyword}">
+                <button type="submit" class="mobile-search-submit" aria-label="Tìm kiếm"><i class="bi bi-search"></i></button>
+            </form>
+
+            <nav class="mobile-drawer-links">
+                <a th:href="@{/products}" class="mobile-drawer-link" th:classappend="${activeNav == 'products'} ? 'active' : ''">
+                    <i class="bi bi-grid"></i>
+                    <span>Tất cả sản phẩm</span>
+                </a>
+                <a th:href="@{/brands}" class="mobile-drawer-link" th:classappend="${activeNav == 'brands'} ? 'active' : ''">
+                    <i class="bi bi-stars"></i>
+                    <span>Thương hiệu</span>
+                </a>
+                <a th:href="@{/products(concern='Trị Mụn')}" class="mobile-drawer-link">
+                    <i class="bi bi-tag"></i>
+                    <span>Khuyến mãi & Ưu đãi</span>
+                </a>
+                <a th:href="@{/stores}" class="mobile-drawer-link" th:classappend="${activeNav == 'stores'} ? 'active' : ''">
+                    <i class="bi bi-shop"></i>
+                    <span>Hệ thống Showroom</span>
+                </a>
+                <a th:href="@{/}" class="mobile-drawer-link" th:classappend="${activeNav == 'home'} ? 'active' : ''">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Tạp chí sắc đẹp (Blog)</span>
+                </a>
+
+                <div class="mobile-drawer-divider"></div>
+
+                <div class="mobile-drawer-heading">Tài khoản & Mua sắm</div>
+                <a th:href="@{/cart}" class="mobile-drawer-link">
+                    <i class="bi bi-bag"></i>
+                    <span>Giỏ hàng (<span class="cart-badge-count" th:text="${cart != null ? cart.totalItems : 0}">0</span>)</span>
+                </a>
+                <a th:href="@{/account/wishlist}" class="mobile-drawer-link">
+                    <i class="bi bi-heart"></i>
+                    <span>Sản phẩm yêu thích</span>
+                </a>
+                <a th:if="${currentUser != null and currentUser.isCustomer()}" th:href="@{/account/orders}" class="mobile-drawer-link">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Đơn hàng của tôi</span>
+                </a>
+                <a th:if="${currentUser != null}" th:href="@{/account/profile}" class="mobile-drawer-link">
+                    <i class="bi bi-person"></i>
+                    <span>Thông tin tài khoản</span>
+                </a>
+                <a th:if="${currentUser != null and currentUser.isEmployee()}" th:href="@{/admin}" class="mobile-drawer-link" style="color: var(--color-gold-light); font-weight: 700;">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Quản trị hệ thống</span>
+                </a>
+                <a th:if="${currentUser != null}" th:href="@{/logout}" onclick="LUNEA.logout(event)" class="mobile-drawer-link" style="color: var(--color-danger);">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Đăng xuất</span>
+                </a>
+                <a th:unless="${currentUser != null}" th:href="@{/login}" class="mobile-drawer-link" style="color: var(--color-gold-light);">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Đăng nhập / Đăng ký</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
 </header>
 
 </html>

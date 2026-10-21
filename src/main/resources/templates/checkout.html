@@ -37,10 +37,10 @@
 
             <!-- Checkout Layout Form (Page 9 PDF) -->
             <form id="checkoutForm" onsubmit="handlePlaceOrder(event)" 
-                  style="display: grid; grid-template-columns: 1fr 400px; gap: 48px; align-items: start;" class="reveal-on-scroll">
+                  class="checkout-layout-grid reveal-on-scroll">
                 
                 <!-- Left: Shipping & Payment Information -->
-                <div>
+                <div class="checkout-main-column">
                     <!-- Step 1: Thông tin người nhận -->
                     <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 32px 28px; margin-bottom: 24px;">
                         <h3 style="font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; margin-bottom: 24px; color: var(--color-text-primary);">
@@ -71,7 +71,7 @@
                                th:value="${addresses != null and !addresses.isEmpty() ? addresses[0].id : ''}">
 
                         <!-- Recipient Name & Phone (Page 9 PDF) -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div class="checkout-grid-2col">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" for="recipientName">Họ và tên *</label>
                                 <input type="text" id="recipientName" name="recipientName" required class="form-control-lunea" 
@@ -87,7 +87,7 @@
                         </div>
 
                         <!-- Location Selectors (Province, District, Ward) -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                        <div class="checkout-grid-2col">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label class="form-label" for="provinceSelect">Tỉnh / thành phố *</label>
                                 <select id="provinceSelect" class="form-control-lunea" onchange="onProvinceChange()" required>
@@ -163,7 +163,7 @@
                 </div>
 
                 <!-- Right: Đơn hàng của bạn & Summary (Page 9 PDF) -->
-                <aside style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 32px 24px;">
+                <aside class="checkout-summary-aside">
                     <h3 style="font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; margin-bottom: 20px; color: var(--color-text-primary);">
                         Đơn hàng của bạn
                     </h3>

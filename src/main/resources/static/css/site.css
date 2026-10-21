@@ -650,7 +650,228 @@ h4,
 }
 
 /* ==========================================================================
-/* ==========================================================================
+   MOBILE HAMBURGER & NAVIGATION DRAWER (WCAG 2.1 AA & Reflow)
+   ========================================================================== */
+.mobile-hamburger-btn {
+    display: none; /* Activated via media queries at <= 768px */
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    padding: 0;
+    transition: all var(--duration-base) var(--ease-spring);
+    flex-shrink: 0;
+}
+
+.mobile-hamburger-btn:hover {
+    border-color: var(--color-border-gold);
+    background: var(--color-gold-glow);
+    transform: translateY(-1px);
+}
+
+.hamburger-bar {
+    width: 17px;
+    height: 1.5px;
+    background-color: var(--color-text-primary);
+    border-radius: 2px;
+    transition: transform var(--duration-base) var(--ease-spring), opacity var(--duration-fast);
+}
+
+.mobile-hamburger-btn.is-active .hamburger-bar:nth-child(1),
+.mobile-hamburger-btn.active .hamburger-bar:nth-child(1) {
+    transform: translateY(5.5px) rotate(45deg);
+}
+
+.mobile-hamburger-btn.is-active .hamburger-bar:nth-child(2),
+.mobile-hamburger-btn.active .hamburger-bar:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-hamburger-btn.is-active .hamburger-bar:nth-child(3),
+.mobile-hamburger-btn.active .hamburger-bar:nth-child(3) {
+    transform: translateY(-5.5px) rotate(-45deg);
+}
+
+/* Mobile Drawer Overlay */
+.mobile-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 5, 8, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 99998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--duration-base) var(--ease-smooth), visibility var(--duration-base);
+    pointer-events: none;
+}
+
+.mobile-drawer-overlay.active,
+.mobile-drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Mobile Navigation Drawer Modal */
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(340px, 86vw);
+    height: 100vh;
+    height: 100dvh;
+    background: var(--color-bg-card);
+    border-right: 1px solid var(--color-border-subtle);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.7);
+    z-index: 99999;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.mobile-nav-drawer.active,
+.mobile-nav-drawer.open {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.mobile-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.mobile-drawer-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border-subtle);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all var(--duration-fast);
+}
+
+.mobile-drawer-close:hover {
+    color: var(--color-gold-light);
+    border-color: var(--color-border-gold);
+    transform: rotate(90deg);
+}
+
+.mobile-drawer-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+}
+
+.mobile-drawer-search {
+    position: relative;
+    width: 100%;
+}
+
+.mobile-drawer-search input,
+.mobile-drawer-search-input {
+    width: 100%;
+    padding: 10px 42px 10px 16px;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--color-text-primary);
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+
+.mobile-drawer-search input:focus,
+.mobile-drawer-search-input:focus {
+    border-color: var(--color-border-gold);
+    box-shadow: 0 0 12px var(--color-gold-glow);
+}
+
+.mobile-search-submit,
+.mobile-drawer-search-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-gold-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+
+.mobile-drawer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mobile-drawer-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all var(--duration-fast);
+}
+
+.mobile-drawer-link i {
+    width: 20px;
+    text-align: center;
+    color: var(--color-gold-primary);
+    font-size: 1rem;
+}
+
+.mobile-drawer-link:hover,
+.mobile-drawer-link.active {
+    color: var(--color-text-primary);
+    background: rgba(223, 190, 123, 0.08);
+}
+
+.mobile-drawer-divider {
+    height: 1px;
+    background: var(--color-border-subtle);
+    margin: 6px 0;
+}
+
+.mobile-drawer-heading {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-gold-muted);
+    font-weight: 600;
+    padding: 0 16px;
+}
+
 /* ==========================================================================
    HERO SECTION - EUROPEAN LUXURY EDITORIAL (Matching Screenshot & Dual-Theme)
    ========================================================================== */
@@ -1138,6 +1359,14 @@ h4,
 
 [data-theme="light"] .bento-card-overlay {
     background: linear-gradient(180deg, rgba(250, 248, 245, 0.1) 0%, rgba(18, 20, 26, 0.78) 100%);
+}
+
+.bento-card-spotlight .bento-card-overlay {
+    background: linear-gradient(180deg, rgba(7, 8, 12, 0.45) 0%, rgba(7, 8, 12, 0.82) 45%, rgba(7, 8, 12, 0.95) 100%);
+}
+
+[data-theme="light"] .bento-card-spotlight .bento-card-overlay {
+    background: linear-gradient(180deg, rgba(18, 20, 26, 0.35) 0%, rgba(18, 20, 26, 0.75) 45%, rgba(18, 20, 26, 0.92) 100%);
 }
 
 .bento-card-content {
@@ -1941,24 +2170,26 @@ h4,
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--color-bg-subtle);
     border: 1px solid var(--color-border-subtle);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.78rem;
     font-weight: 700;
+    color: var(--color-text-muted);
 }
 
 .stepper-item.active {
-    color: #ffffff;
+    color: var(--color-text-primary);
+    font-weight: 600;
 }
 
 .stepper-item.active .stepper-node-circle {
-    background: #e2c58a;
+    background: var(--color-gold-primary);
     color: #080a0f;
-    border-color: #fcebc3;
-    box-shadow: 0 0 14px rgba(226, 197, 138, 0.5);
+    border-color: var(--color-gold-light);
+    box-shadow: 0 0 14px var(--color-gold-glow);
 }
 
 .stepper-item.completed {
@@ -1966,9 +2197,270 @@ h4,
 }
 
 .stepper-item.completed .stepper-node-circle {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
-    border-color: rgba(16, 185, 129, 0.35);
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border-color: var(--color-success-border);
+}
+
+[data-theme="light"] .stepper-item.active .stepper-node-circle {
+    background: #12141a;
+    color: #ffffff;
+    border-color: #12141a;
+    box-shadow: 0 2px 10px rgba(18, 20, 26, 0.2);
+}
+
+[data-theme="light"] .stepper-item.completed .stepper-node-circle {
+    background: #d1fae5;
+    color: #047857;
+    border-color: rgba(4, 120, 87, 0.3);
+}
+
+/* ==========================================================================
+   CART & CHECKOUT RESPONSIVE LAYOUTS (Pages 8, 9, 13 PDF)
+   ========================================================================== */
+.cart-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+    align-items: start;
+    margin-bottom: 64px;
+}
+
+.cart-items-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.cart-table-header {
+    display: grid;
+    grid-template-columns: 1fr 140px 140px;
+    gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.cart-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.cart-item-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 140px 140px;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 18px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--duration-fast);
+}
+
+.cart-item-row:hover {
+    border-color: var(--color-border-gold);
+}
+
+.cart-item-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cart-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.cart-item-info .product-brand-tag {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--color-gold-primary);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.cart-item-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.cart-item-meta {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+}
+
+.cart-item-stepper-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-item-subtotal-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+}
+
+.cart-item-subtotal-price {
+    font-weight: 600;
+    font-size: 0.98rem;
+    color: var(--color-gold-light);
+    white-space: nowrap;
+}
+
+.cart-item-remove-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
+    cursor: pointer;
+    padding: 6px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color var(--duration-fast), transform var(--duration-fast);
+}
+
+.cart-item-remove-btn:hover {
+    color: #f43f5e;
+    transform: scale(1.15);
+}
+
+.cart-summary-aside {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 32px 28px;
+    position: sticky;
+    top: 96px;
+    box-shadow: var(--shadow-card);
+}
+
+/* Checkout Page Grid */
+.checkout-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 32px;
+    align-items: start;
+    margin-bottom: 64px;
+}
+
+.checkout-main-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.checkout-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.checkout-summary-aside {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 32px 28px;
+    position: sticky;
+    top: 96px;
+    box-shadow: var(--shadow-card);
+}
+
+/* ==========================================================================
+   ACCOUNT & ORDER STEPPER TIMELINE (Page 12 PDF)
+   ========================================================================== */
+.account-page-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 32px;
+    align-items: start;
+    margin-bottom: 64px;
+}
+
+.account-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.account-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.order-stepper-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-card);
+}
+
+.order-stepper-track {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin: 12px 0;
+    align-items: flex-start;
+}
+
+.stepper-track-line {
+    position: absolute;
+    top: 16px;
+    left: 5%;
+    right: 5%;
+    height: 2px;
+    background: var(--color-border-subtle);
+    z-index: 1;
+}
+
+.order-step-node {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 110px;
+}
+
+.order-info-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
 }
 
 /* ==========================================================================
@@ -3066,6 +3558,33 @@ select.form-control-lunea option {
     .catalog-layout {
         grid-template-columns: 1fr;
     }
+
+    /* Reflow 2-column layouts to 1-column on tablets & compact viewports */
+    .product-detail-layout {
+        grid-template-columns: 1fr !important;
+        gap: 36px;
+    }
+
+    .cart-layout-grid {
+        grid-template-columns: 1fr !important;
+        gap: 28px;
+    }
+
+    .checkout-layout-grid {
+        grid-template-columns: 1fr !important;
+        gap: 28px;
+    }
+
+    .account-page-layout {
+        grid-template-columns: 1fr !important;
+        gap: 24px;
+    }
+
+    .cart-summary-aside,
+    .checkout-summary-aside {
+        position: static !important;
+        top: auto !important;
+    }
 }
 
 @media (max-width: 768px) {
@@ -3075,6 +3594,31 @@ select.form-control-lunea option {
 
     .nav-links {
         display: none;
+    }
+
+    /* Mobile Island Header & Navigation */
+    .mobile-hamburger-btn {
+        display: flex;
+    }
+
+    .lunea-navbar-island {
+        padding: 6px 14px;
+        margin: 6px 12px 0;
+        width: auto;
+        max-width: calc(100vw - 24px);
+    }
+
+    .lunea-navbar-island .nav-search-form {
+        display: none !important;
+    }
+
+    .user-name {
+        display: none !important;
+    }
+
+    .brand-title-text {
+        font-size: 1.15rem;
+        letter-spacing: 0.15em;
     }
 
     .category-strip-grid {
@@ -3140,6 +3684,116 @@ select.form-control-lunea option {
     .auth-story-col {
         display: none;
     }
+
+    /* Cart Responsive Table & Items */
+    .cart-table-header {
+        display: none;
+    }
+
+    .cart-item-row {
+        grid-template-columns: 76px 1fr;
+        grid-template-rows: auto auto;
+        column-gap: 14px;
+        row-gap: 12px;
+        align-items: start;
+        padding: 14px;
+    }
+
+    .cart-item-thumb {
+        grid-row: 1 / 2;
+        width: 76px;
+        height: 76px;
+    }
+
+    .cart-item-info {
+        grid-row: 1 / 2;
+    }
+
+    .cart-item-stepper-wrap {
+        grid-column: 1 / 3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid var(--color-border-subtle);
+        padding-top: 12px;
+    }
+
+    .cart-item-subtotal-wrap {
+        grid-column: 1 / 3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Checkout Responsive Form */
+    .checkout-grid-2col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Order Details Responsive Info */
+    .order-info-2col {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    /* 5-Step Order Stepper switches from horizontal track to vertical timeline */
+    .order-stepper-card {
+        padding: 20px 16px;
+    }
+
+    .order-stepper-track {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 22px;
+        padding-left: 12px;
+        position: relative;
+    }
+
+    .stepper-track-line {
+        top: 20px;
+        bottom: 20px;
+        left: 27px;
+        right: auto;
+        width: 2px;
+        height: calc(100% - 40px);
+    }
+
+    .order-step-node {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        max-width: 100%;
+        gap: 14px;
+    }
+
+    .order-step-node > div:first-child {
+        margin: 0 !important;
+        flex-shrink: 0;
+    }
+
+    .checkout-stepper-bar {
+        gap: 14px;
+    }
+
+    .checkout-stepper-bar .stepper-item span:not(.stepper-node-circle) {
+        display: none;
+    }
+
+    .lunea-navbar-island {
+        padding: 6px 10px;
+        margin: 6px 8px 0;
+        max-width: calc(100vw - 16px);
+    }
+
+    .nav-actions {
+        gap: 8px;
+    }
+
+    .product-luxury-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ==========================================================================
@@ -3147,7 +3801,7 @@ select.form-control-lunea option {
    ========================================================================== */
 #toast-container {
     position: fixed;
-    top: 24px;
+    top: 96px;
     right: 24px;
     z-index: 999999;
     display: flex;
@@ -3257,6 +3911,102 @@ select.form-control-lunea option {
     transform: scale(1.15);
 }
 
+/* ==========================================================================
+   LIGHT THEME TOAST NOTIFICATIONS (Moonlight Pearl Luxury Canvas)
+   ========================================================================== */
+[data-theme="light"] .lunea-toast {
+    box-shadow: 0 12px 36px rgba(20, 24, 33, 0.12), 0 2px 8px rgba(20, 24, 33, 0.06);
+    border: 1px solid var(--color-border-medium);
+}
+
+[data-theme="light"] .lunea-toast.error {
+    background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+    border: 1px solid rgba(225, 29, 72, 0.35);
+    color: #9f1239;
+}
+
+[data-theme="light"] .lunea-toast.error .lunea-toast-icon {
+    color: #e11d48;
+}
+
+[data-theme="light"] .lunea-toast.success {
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    border: 1px solid rgba(5, 150, 105, 0.35);
+    color: #065f46;
+}
+
+[data-theme="light"] .lunea-toast.success .lunea-toast-icon {
+    color: #059669;
+}
+
+[data-theme="light"] .lunea-toast.warning {
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+    border: 1px solid rgba(217, 119, 6, 0.4);
+    color: #92400e;
+}
+
+[data-theme="light"] .lunea-toast.warning .lunea-toast-icon {
+    color: #d97706;
+}
+
+[data-theme="light"] .lunea-toast.info {
+    background: linear-gradient(135deg, #ffffff 0%, #fefcf8 100%);
+    border: 1px solid var(--color-border-gold);
+    color: var(--color-text-primary);
+}
+
+[data-theme="light"] .lunea-toast.info .lunea-toast-icon {
+    color: var(--color-gold-rich);
+}
+
+/* ==========================================================================
+   UNIVERSAL IN-PAGE LUXURY ALERTS (Synchronized Dual-Theme)
+   ========================================================================== */
+.lunea-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: var(--radius-xs, 6px);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    transition: all var(--duration-base);
+}
+
+.lunea-alert.danger,
+.lunea-alert.error {
+    background: var(--color-danger-bg);
+    border: 1px solid var(--color-danger-border);
+    color: var(--color-danger);
+}
+
+.lunea-alert.success {
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success);
+}
+
+.lunea-alert.warning {
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning-border);
+    color: var(--color-warning);
+}
+
+.lunea-alert.info {
+    background: var(--color-info-bg);
+    border: 1px solid var(--color-info-border);
+    color: var(--color-info);
+}
+
+.lunea-alert-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 @keyframes shake-anim {
     0%, 100% { transform: translateX(0); }
@@ -3266,6 +4016,70 @@ select.form-control-lunea option {
 
 .shake-anim {
     animation: shake-anim 0.35s ease-in-out;
+}
+
+/* ==========================================================================
+   LUXURY CATALOG PAGINATION (Matching Boutique Aesthetic)
+   ========================================================================== */
+.lunea-pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border-subtle);
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease-spring);
+    user-select: none;
+    cursor: pointer;
+}
+
+.pagination-btn:hover:not(.pagination-disabled):not(.active) {
+    color: var(--color-gold-light);
+    border-color: var(--color-border-gold);
+    background: var(--color-bg-elevated);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pagination-btn.active {
+    color: #0b0b0f;
+    background: linear-gradient(135deg, var(--color-gold-light), #dfbe7b);
+    border-color: var(--color-gold-light);
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(223, 190, 123, 0.25);
+    cursor: default;
+    pointer-events: none;
+}
+
+[data-theme="light"] .pagination-btn.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, #a07828, #b8862d);
+    border-color: #a07828;
+    box-shadow: 0 4px 12px rgba(184, 134, 45, 0.3);
+}
+
+.pagination-btn.pagination-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* ==========================================================================
