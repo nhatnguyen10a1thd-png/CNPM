@@ -111,6 +111,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="inventoryPagination"></div>
             </div>
         </div>
     </main>
@@ -227,6 +228,9 @@
 
     <script>
         let inventoryData = [];
+        let currentPage = 0;
+        let pageSize = 10;
+        let currentFilteredInventory = [];
 
         async function loadInventory() {
             const storeId = document.getElementById('branchFilter').value;
@@ -275,7 +279,95 @@
                 });
             }
 
-            renderInventoryTable(filtered);
+            currentFilteredInventory = filtered;
+            currentPage = 0;
+            renderInventoryPage();
+        }
+
+        function changeInventoryPageSize(size) {
+            pageSize = parseInt(size, 10) || 10;
+            currentPage = 0;
+            renderInventoryPage();
+        }
+
+        function goToInventoryPage(page) {
+            currentPage = page;
+            renderInventoryPage();
+            const tableCard = document.querySelector('.admin-card');
+            if (tableCard) {
+                tableCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function renderInventoryPage() {
+            const total = currentFilteredInventory.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+
+            const startIdx = currentPage * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, total);
+            const pagedItems = currentFilteredInventory.slice(startIdx, endIdx);
+
+            renderInventoryTable(pagedItems);
+            renderInventoryPaginationControls(total, totalPages, startIdx, endIdx);
+        }
+
+        function renderInventoryPaginationControls(total, totalPages, startIdx, endIdx) {
+            const container = document.getElementById('inventoryPagination');
+            if (!container) return;
+
+            if (total === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="admin-pagination-wrapper">
+                    <div class="admin-pagination-info">
+                        Hiển thị <strong>${total > 0 ? startIdx + 1 : 0} - ${endIdx}</strong> trên tổng số <strong>${total}</strong> SKU tồn kho
+                    </div>
+                    <div class="admin-pagination-actions">
+                        <div class="admin-page-size-selector">
+                            <label for="invPageSizeSelect">Hiển thị:</label>
+                            <select id="invPageSizeSelect" class="admin-select" onchange="changeInventoryPageSize(this.value)">
+                                <option value="10" ${pageSize === 10 ? 'selected' : ''}>10 / trang</option>
+                                <option value="25" ${pageSize === 25 ? 'selected' : ''}>25 / trang</option>
+                                <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 / trang</option>
+                            </select>
+                        </div>
+                        <nav class="admin-pagination" aria-label="Phân trang danh sách tồn kho">
+                            <button type="button" class="pagination-btn ${currentPage === 0 ? 'pagination-disabled' : ''}" 
+                                    onclick="goToInventoryPage(${currentPage - 1})" aria-label="Trang trước" ${currentPage === 0 ? 'disabled' : ''}>
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+            `;
+
+            for (let i = 0; i < totalPages; i++) {
+                if (totalPages <= 7 || i === 0 || i === totalPages - 1 || Math.abs(i - currentPage) <= 1) {
+                    html += `
+                        <button type="button" class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                                onclick="goToInventoryPage(${i})" aria-label="Trang ${i + 1}" ${i === currentPage ? 'aria-current="page"' : ''}>
+                            ${i + 1}
+                        </button>
+                    `;
+                } else if (i === 1 && currentPage > 2) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                } else if (i === totalPages - 2 && currentPage < totalPages - 3) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+
+            html += `
+                            <button type="button" class="pagination-btn ${currentPage >= totalPages - 1 ? 'pagination-disabled' : ''}" 
+                                    onclick="goToInventoryPage(${currentPage + 1})" aria-label="Trang sau" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
         }
 
         function renderInventoryTable(items) {

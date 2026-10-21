@@ -121,6 +121,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="productsPagination"></div>
             </div>
         </div>
     </main>
@@ -562,6 +563,9 @@
         let allBrands = [];
         let allCategories = [];
         let currentSelectedProductForSku = null;
+        let currentPage = 0;
+        let pageSize = 10;
+        let currentFilteredProducts = [];
 
         async function loadProducts() {
             try {
@@ -666,7 +670,96 @@
                 });
             }
 
-            renderProductsTable(filtered);
+            currentFilteredProducts = filtered;
+            currentPage = 0;
+            renderProductsPage();
+        }
+
+        function changePageSize(size) {
+            pageSize = parseInt(size, 10) || 10;
+            currentPage = 0;
+            renderProductsPage();
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProductsPage();
+            // Scroll table into view smoothly
+            const tableCard = document.querySelector('.admin-card');
+            if (tableCard) {
+                tableCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function renderProductsPage() {
+            const total = currentFilteredProducts.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+
+            const startIdx = currentPage * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, total);
+            const pagedItems = currentFilteredProducts.slice(startIdx, endIdx);
+
+            renderProductsTable(pagedItems);
+            renderPaginationControls(total, totalPages, startIdx, endIdx);
+        }
+
+        function renderPaginationControls(total, totalPages, startIdx, endIdx) {
+            const container = document.getElementById('productsPagination');
+            if (!container) return;
+
+            if (total === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <div class="admin-pagination-wrapper">
+                    <div class="admin-pagination-info">
+                        Hiển thị <strong>${total > 0 ? startIdx + 1 : 0} - ${endIdx}</strong> trên tổng số <strong>${total}</strong> sản phẩm
+                    </div>
+                    <div class="admin-pagination-actions">
+                        <div class="admin-page-size-selector">
+                            <label for="pageSizeSelect">Hiển thị:</label>
+                            <select id="pageSizeSelect" class="admin-select" onchange="changePageSize(this.value)">
+                                <option value="10" ${pageSize === 10 ? 'selected' : ''}>10 / trang</option>
+                                <option value="25" ${pageSize === 25 ? 'selected' : ''}>25 / trang</option>
+                                <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 / trang</option>
+                            </select>
+                        </div>
+                        <nav class="admin-pagination" aria-label="Phân trang danh sách sản phẩm">
+                            <button type="button" class="pagination-btn ${currentPage === 0 ? 'pagination-disabled' : ''}" 
+                                    onclick="goToPage(${currentPage - 1})" aria-label="Trang trước" ${currentPage === 0 ? 'disabled' : ''}>
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+            `;
+
+            for (let i = 0; i < totalPages; i++) {
+                if (totalPages <= 7 || i === 0 || i === totalPages - 1 || Math.abs(i - currentPage) <= 1) {
+                    html += `
+                        <button type="button" class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                                onclick="goToPage(${i})" aria-label="Trang ${i + 1}" ${i === currentPage ? 'aria-current="page"' : ''}>
+                            ${i + 1}
+                        </button>
+                    `;
+                } else if (i === 1 && currentPage > 2) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                } else if (i === totalPages - 2 && currentPage < totalPages - 3) {
+                    html += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+
+            html += `
+                            <button type="button" class="pagination-btn ${currentPage >= totalPages - 1 ? 'pagination-disabled' : ''}" 
+                                    onclick="goToPage(${currentPage + 1})" aria-label="Trang sau" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
         }
 
         function renderProductsTable(products) {
