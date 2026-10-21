@@ -140,10 +140,24 @@ const LUNEA = (function () {
 
             // 401 Unauthorized
             if (response.status === 401) {
-                if (!skipAuthToast && !isAuthPage) {
+                if (isAuthPage || url.includes('/api/auth/')) {
+                    const contentType = response.headers.get('content-type');
+                    const isJson = contentType && contentType.includes('application/json');
+                    const data = isJson ? await response.json().catch(() => ({})) : await response.text().catch(() => '');
+                    const errorMessage = (data && data.message) ? data.message : 'Email/SĐT hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa!';
+                    if (!skipAuthToast && !options.skipToast) {
+                        showToast(errorMessage, 'error', 4000);
+                    }
+                    const error = new Error(errorMessage);
+                    error.data = data;
+                    error.status = 401;
+                    throw error;
+                }
+
+                if (!skipAuthToast) {
                     showToast('Vui lòng đăng nhập để tiếp tục thao tác.', 'error', 3000);
                 }
-                if (!skipAuthRedirect && !isAuthPage) {
+                if (!skipAuthRedirect) {
                     setTimeout(() => {
                         const currentPath = window.location.pathname + window.location.search;
                         window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
