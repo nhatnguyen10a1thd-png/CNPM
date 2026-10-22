@@ -50,6 +50,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -428,14 +431,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getByCustomer(Long customerId) {
-        return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId)
-                .stream().map(this::toResponse).toList();
+        return toResponseBatch(orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAll() {
-        return orderRepository.findAllByOrderByCreatedAtDesc().stream().map(this::toResponse).toList();
+        return toResponseBatch(orderRepository.findAllByOrderByCreatedAtDesc());
     }
 
     @Override
@@ -449,11 +451,9 @@ public class OrderServiceImpl implements OrderService {
         if (accessibleIds == null) {
             // Admin or ALL_STORES
             if (requestedStoreId != null) {
-                return orderRepository.findByAssignedStoreIdOrderByCreatedAtDesc(requestedStoreId)
-                        .stream().map(this::toResponse).toList();
+                return toResponseBatch(orderRepository.findByAssignedStoreIdOrderByCreatedAtDesc(requestedStoreId));
             }
-            return orderRepository.findAllByOrderByCreatedAtDesc()
-                    .stream().map(this::toResponse).toList();
+            return toResponseBatch(orderRepository.findAllByOrderByCreatedAtDesc());
         }
 
         if (accessibleIds.isEmpty()) {
@@ -464,12 +464,10 @@ public class OrderServiceImpl implements OrderService {
             if (!accessibleIds.contains(requestedStoreId)) {
                 return List.of();
             }
-            return orderRepository.findByAssignedStoreIdOrderByCreatedAtDesc(requestedStoreId)
-                    .stream().map(this::toResponse).toList();
+            return toResponseBatch(orderRepository.findByAssignedStoreIdOrderByCreatedAtDesc(requestedStoreId));
         }
 
-        return orderRepository.findByAssignedStoreIdInOrderByCreatedAtDesc(accessibleIds)
-                .stream().map(this::toResponse).toList();
+        return toResponseBatch(orderRepository.findByAssignedStoreIdInOrderByCreatedAtDesc(accessibleIds));
     }
 
     @Override
@@ -576,6 +574,103 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return updateStatus(id, OrderStatus.CANCELLED);
+    }
+
+    private List<OrderResponse> toResponseBatch(List<OrderEntity> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> orderIds = orders.stream().map(OrderEntity::getId).toList();
+
+        // 1. Batch fetch all order items with SKU and Product eagerly fetched in 1 query
+        List<OrderItemEntity> allItems = orderItemRepository.findByOrderIdInWithSkuAndProduct(orderIds);
+        Map<Long, List<OrderItemEntity>> itemsMap = allItems.stream()
+                .filter(i -> i.getOrder() != null)
+                .collect(Collectors.groupingBy(i -> i.getOrder().getId()));
+
+        // 2. Collect product IDs from items to batch fetch primary images in 1 query
+        Set<Long> productIds = allItems.stream()
+                .map(i -> (i.getSku() != null && i.getSku().getProduct() != null) ? i.getSku().getProduct().getId() : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> primaryImageMap;
+        if (productImageRepository != null && !productIds.isEmpty()) {
+            List<ProductImageEntity> primaryImages = productImageRepository.findByProductIdInAndIsPrimaryTrue(productIds);
+            primaryImageMap = primaryImages.stream()
+                    .filter(img -> img.getProduct() != null)
+                    .collect(Collectors.toMap(
+                            img -> img.getProduct().getId(),
+                            ProductImageEntity::getImageUrl,
+                            (a, b) -> a
+                    ));
+        } else {
+            primaryImageMap = Map.of();
+        }
+
+        // 3. Map orders in memory without any additional database queries
+        return orders.stream().map(o -> {
+            List<OrderItemEntity> items = itemsMap.getOrDefault(o.getId(), List.of());
+
+            List<OrderItemResponse> itemResponses = items.stream().map(i -> {
+                Long productId = (i.getSku() != null && i.getSku().getProduct() != null) ? i.getSku().getProduct().getId() : null;
+                String imgUrl = productId != null ? primaryImageMap.get(productId) : null;
+
+                return OrderItemResponse.builder()
+                        .id(i.getId())
+                        .skuId(i.getSku() != null ? i.getSku().getId() : null)
+                        .productId(productId)
+                        .productName(i.getSnapshotProductName())
+                        .variantName(i.getSnapshotVariantName())
+                        .imageUrl(imgUrl)
+                        .price(i.getSnapshotPrice())
+                        .quantity(i.getQuantity())
+                        .subtotal(i.getSubtotal())
+                        .build();
+            }).toList();
+
+            String fullAddress = o.getShippingAddress() != null ? o.getShippingAddress() : "";
+            if (o.getWard() != null && !o.getWard().isBlank() && !fullAddress.contains(o.getWard())) {
+                fullAddress += ", " + o.getWard();
+            }
+            if (o.getDistrict() != null && !o.getDistrict().isBlank() && !fullAddress.contains(o.getDistrict())) {
+                fullAddress += ", " + o.getDistrict();
+            }
+            if (o.getProvince() != null && !o.getProvince().isBlank() && !fullAddress.contains(o.getProvince())) {
+                fullAddress += ", " + o.getProvince();
+            }
+
+            return OrderResponse.builder()
+                    .id(o.getId())
+                    .orderCode(o.getOrderCode())
+                    .customerId(o.getCustomer() != null ? o.getCustomer().getId() : null)
+                    .customerName(o.getCustomer() != null ? o.getCustomer().getFullName() : null)
+                    .fulfillmentStoreId(o.getAssignedStore() != null ? o.getAssignedStore().getId() : null)
+                    .fulfillmentStoreName(o.getAssignedStore() != null ? o.getAssignedStore().getName() : null)
+                    .recipientName(o.getRecipientName())
+                    .recipientPhone(o.getRecipientPhone())
+                    .shippingAddress(fullAddress)
+                    .ward(o.getWard())
+                    .district(o.getDistrict())
+                    .province(o.getProvince())
+                    .deliveryMethod(o.getDeliveryMethod())
+                    .voucherId(o.getVoucher() != null ? o.getVoucher().getId() : null)
+                    .voucherCode(o.getVoucher() != null ? o.getVoucher().getCode() : null)
+                    .subtotal(o.getSubtotal())
+                    .discountAmount(o.getDiscountAmount())
+                    .shippingFee(o.getShippingFee())
+                    .totalAmount(o.getTotalAmount())
+                    .status(o.getStatus())
+                    .paymentMethod(o.getPaymentMethod())
+                    .note(o.getNote())
+                    .createdAt(o.getCreatedAt())
+                    .confirmedAt(o.getConfirmedAt())
+                    .completedAt(o.getCompletedAt())
+                    .cancelledAt(o.getCancelledAt())
+                    .items(itemResponses)
+                    .build();
+        }).toList();
     }
 
     private OrderResponse toResponse(OrderEntity o) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface ProductSkuRepository extends JpaRepository<ProductSkuEntity, Long> {
     List<ProductSkuEntity> findByProductId(Long productId);
+    List<ProductSkuEntity> findByProductIdIn(java.util.Collection<Long> productIds);
     Optional<ProductSkuEntity> findBySkuCode(String skuCode);
     boolean existsBySkuCode(String skuCode);
     boolean existsBySkuCodeAndIdNot(String skuCode, Long id);

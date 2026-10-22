@@ -8,11 +8,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InventoryRepository extends JpaRepository<InventoryEntity, Long> {
-    List<InventoryEntity> findByStoreId(Long storeId);
+    @Query("SELECT i FROM InventoryEntity i JOIN FETCH i.sku s JOIN FETCH s.product p JOIN FETCH i.store st WHERE st.id = :storeId")
+    List<InventoryEntity> findByStoreId(@Param("storeId") Long storeId);
+
     Optional<InventoryEntity> findByStoreIdAndSkuId(Long storeId, Long skuId);
     List<InventoryEntity> findBySkuId(Long skuId);
+    List<InventoryEntity> findBySkuIdIn(java.util.Collection<Long> skuIds);
 
-    @Query("SELECT i FROM InventoryEntity i WHERE i.store.id = :storeId AND i.actualStock <= i.minimumStock")
+    @Query("SELECT i FROM InventoryEntity i JOIN FETCH i.sku s JOIN FETCH s.product p JOIN FETCH i.store st WHERE st.id = :storeId AND i.actualStock <= i.minimumStock")
     List<InventoryEntity> findLowStock(@Param("storeId") Long storeId);
 
     boolean existsBySkuIdIn(List<Long> skuIds);

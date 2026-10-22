@@ -42,8 +42,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -120,11 +122,11 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> getAll(boolean includeInactive) {
-        return productRepository.findAll()
-                .stream()
+        List<ProductEntity> raw = productRepository.findAllWithBrandAndCategory();
+        List<ProductEntity> filtered = raw.stream()
                 .filter(p -> includeInactive || p.getStatus() == null || p.getStatus() == ActiveStatus.ACTIVE)
-                .map(p -> enrich(p, productMapper.toResponse(p)))
                 .toList();
+        return enrichBatch(filtered);
     }
 
     @Override
@@ -307,6 +309,128 @@ public class ProductServiceImpl implements ProductService {
         res.setConcerns(concerns);
 
         return res;
+    }
+
+    private List<ProductResponse> enrichBatch(List<ProductEntity> products) {
+        if (products == null || products.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> productIds = products.stream().map(ProductEntity::getId).toList();
+
+        // 1. Batch fetch SKUs in 1 query
+        List<ProductSkuEntity> allSkus = productSkuRepository.findByProductIdIn(productIds);
+        Map<Long, List<ProductSkuEntity>> skuMap = allSkus.stream()
+                .filter(s -> s.getProduct() != null)
+                .collect(Collectors.groupingBy(s -> s.getProduct().getId()));
+
+        // 2. Batch fetch Inventories for all SKUs in 1 query
+        List<Long> skuIds = allSkus.stream().map(ProductSkuEntity::getId).toList();
+        Map<Long, List<InventoryEntity>> invMap;
+        if (!skuIds.isEmpty()) {
+            List<InventoryEntity> allInvs = inventoryRepository.findBySkuIdIn(skuIds);
+            invMap = allInvs.stream()
+                    .filter(i -> i.getSku() != null)
+                    .collect(Collectors.groupingBy(i -> i.getSku().getId()));
+        } else {
+            invMap = Map.of();
+        }
+
+        // 3. Batch fetch Images in 1 query
+        List<ProductImageEntity> allImgs = productImageRepository.findByProductIdInOrderBySortOrderAsc(productIds);
+        Map<Long, List<ProductImageEntity>> imgMap = allImgs.stream()
+                .filter(i -> i.getProduct() != null)
+                .collect(Collectors.groupingBy(i -> i.getProduct().getId()));
+
+        // 4. Batch fetch Attributes with JOIN FETCH in 1 query
+        List<ProductAttributeValueEntity> allAttrValues = productAttributeValueRepository.findByProductIdInWithAttribute(productIds);
+        Map<Long, List<ProductAttributeValueEntity>> attrMap = allAttrValues.stream()
+                .filter(a -> a.getProduct() != null)
+                .collect(Collectors.groupingBy(a -> a.getProduct().getId()));
+
+        String defaultFallbackImg = "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80";
+
+        // Map and enrich all products in-memory without any subsequent database queries
+        return products.stream().map(product -> {
+            ProductResponse res = productMapper.toResponse(product);
+            if (res == null) return null;
+
+            // 1. SKUs
+            List<ProductSkuEntity> productSkus = skuMap.getOrDefault(product.getId(), List.of());
+            List<ProductSkuResponse> skus = productSkus.stream().map(s -> ProductSkuResponse.builder()
+                    .id(s.getId())
+                    .productId(product.getId())
+                    .productName(product.getName())
+                    .skuCode(s.getSkuCode())
+                    .variantName(s.getVariantName())
+                    .price(s.getPrice())
+                    .listPrice(s.getListPrice())
+                    .barcode(s.getBarcode())
+                    .status(s.getStatus())
+                    .build()).toList();
+            res.setSkus(skus);
+
+            // 2. Images
+            List<ProductImageEntity> imgs = imgMap.getOrDefault(product.getId(), List.of());
+            Optional<ProductImageEntity> primaryImg = imgs.stream()
+                    .filter(i -> Boolean.TRUE.equals(i.getIsPrimary()))
+                    .findFirst();
+            String primaryUrl = primaryImg.map(ProductImageEntity::getImageUrl)
+                    .orElseGet(() -> !imgs.isEmpty() ? imgs.get(0).getImageUrl() : defaultFallbackImg);
+            res.setImageUrl(primaryUrl);
+            res.setImageUrls(imgs.stream().map(ProductImageEntity::getImageUrl).toList());
+
+            // 3. Price range
+            BigDecimal minPrice = skus.stream()
+                    .map(ProductSkuResponse::getPrice)
+                    .filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal maxPrice = skus.stream()
+                    .map(ProductSkuResponse::getPrice)
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+            BigDecimal listPrice = skus.stream()
+                    .map(ProductSkuResponse::getListPrice)
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo)
+                    .orElse(minPrice);
+            res.setMinPrice(minPrice);
+            res.setMaxPrice(maxPrice);
+            res.setListPrice(listPrice);
+
+            // 4. Total available inventory across all stores
+            int totalStock = 0;
+            for (ProductSkuEntity sku : productSkus) {
+                List<InventoryEntity> invs = invMap.getOrDefault(sku.getId(), List.of());
+                for (InventoryEntity inv : invs) {
+                    totalStock += Math.max(0, inv.getActualStock() - inv.getHeldQuantity());
+                }
+            }
+            res.setTotalAvailableStock(totalStock);
+            res.setInStock(totalStock > 0);
+
+            // 5. Attributes (Skin types & Concerns)
+            List<ProductAttributeValueEntity> attrValues = attrMap.getOrDefault(product.getId(), List.of());
+            List<String> skinTypes = new ArrayList<>();
+            List<String> concerns = new ArrayList<>();
+            for (ProductAttributeValueEntity pav : attrValues) {
+                if (pav.getAttribute() != null) {
+                    if ("SKIN_TYPE".equalsIgnoreCase(pav.getAttribute().getGroup())) {
+                        skinTypes.add(pav.getAttribute().getName());
+                    } else if ("NEED".equalsIgnoreCase(pav.getAttribute().getGroup())) {
+                        concerns.add(pav.getAttribute().getName());
+                    } else {
+                        concerns.add(pav.getAttribute().getName());
+                    }
+                }
+            }
+            res.setSkinTypes(skinTypes);
+            res.setConcerns(concerns);
+
+            return res;
+        }).filter(Objects::nonNull).toList();
     }
 
     @Override
