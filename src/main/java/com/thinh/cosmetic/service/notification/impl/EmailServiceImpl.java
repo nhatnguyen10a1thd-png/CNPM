@@ -25,6 +25,12 @@ public class EmailServiceImpl implements EmailService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
+    @Value("${brevo.api-key:}")
+    private String brevoApiKey;
+
+    @Value("${brevo.sender-email:nhatnguyen10a1thd@gmail.com}")
+    private String brevoSenderEmail;
+
     @Value("${resend.api-key:}")
     private String resendApiKey;
 
@@ -58,13 +64,19 @@ public class EmailServiceImpl implements EmailService {
         String subject = "LUNEA Cosmetics - Mã xác thực đặt lại mật khẩu: " + otpCode;
         String htmlBody = buildOtpHtml(otpCode, expiryMinutes);
 
-        // 1. Ưu tiên gửi qua Resend REST API (HTTPS port 443 - không bao giờ bị Cloud/Render chặn cổng)
+        // 1. Ưu tiên 1: Brevo REST API (HTTPS port 443 - Gửi được cho MỌI GMAIL bất kỳ, 300 mail/ngày)
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            boolean sent = sendViaBrevo(toEmail, subject, htmlBody);
+            if (sent) return;
+        }
+
+        // 2. Ưu tiên 2: Resend REST API (HTTPS port 443)
         if (resendApiKey != null && !resendApiKey.isBlank()) {
             boolean sent = sendViaResend(toEmail, subject, htmlBody);
             if (sent) return;
         }
 
-        // 2. Fallback sang SMTP nếu có cấu hình đầy đủ tài khoản & mật khẩu
+        // 3. Fallback: SMTP nếu có cấu hình đầy đủ tài khoản & mật khẩu
         if (mailSender != null && mailUsername != null && !mailUsername.isBlank() && mailPassword != null && !mailPassword.isBlank()) {
             try {
                 MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -82,11 +94,11 @@ public class EmailServiceImpl implements EmailService {
             } catch (Exception ex) {
                 log.error(">>> [EMAIL SERVICE - SMTP] Gửi email đến {} thất bại: {}. (Hãy kiểm tra lại App Password hoặc kết nối SMTP)", toEmail, ex.getMessage());
             }
-        } else if (resendApiKey == null || resendApiKey.isBlank()) {
-            log.warn(">>> [EMAIL SERVICE] Chưa cấu hình RESEND_API_KEY hoặc tài khoản SMTP hợp lệ.");
+        } else if ((brevoApiKey == null || brevoApiKey.isBlank()) && (resendApiKey == null || resendApiKey.isBlank())) {
+            log.warn(">>> [EMAIL SERVICE] Chưa cấu hình BREVO_API_KEY, RESEND_API_KEY hoặc tài khoản SMTP hợp lệ.");
         }
 
-        // 3. Fallback: In mã OTP nội bộ ra log để dễ dàng kiểm thử
+        // 4. Fallback cuối cùng: In mã OTP nội bộ ra log
         log.info(">>> [EMAIL SERVICE - FALLBACK] Mã OTP cho {} là: {}", toEmail, otpCode);
     }
 
@@ -101,13 +113,19 @@ public class EmailServiceImpl implements EmailService {
         String subject = "LUNEA Cosmetics - Mã kích hoạt đăng ký tài khoản: " + otpCode;
         String htmlBody = buildRegistrationOtpHtml(otpCode, expiryMinutes);
 
-        // 1. Ưu tiên gửi qua Resend REST API (HTTPS port 443)
+        // 1. Ưu tiên 1: Brevo REST API (HTTPS port 443 - Gửi được cho MỌI GMAIL)
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            boolean sent = sendViaBrevo(toEmail, subject, htmlBody);
+            if (sent) return;
+        }
+
+        // 2. Ưu tiên 2: Resend REST API (HTTPS port 443)
         if (resendApiKey != null && !resendApiKey.isBlank()) {
             boolean sent = sendViaResend(toEmail, subject, htmlBody);
             if (sent) return;
         }
 
-        // 2. Fallback sang SMTP
+        // 3. Fallback sang SMTP
         if (mailSender != null && mailUsername != null && !mailUsername.isBlank() && mailPassword != null && !mailPassword.isBlank()) {
             try {
                 MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -125,12 +143,49 @@ public class EmailServiceImpl implements EmailService {
             } catch (Exception ex) {
                 log.error(">>> [EMAIL SERVICE - SMTP] Gửi email đăng ký đến {} thất bại: {}. (Hãy kiểm tra lại App Password hoặc kết nối SMTP)", toEmail, ex.getMessage());
             }
-        } else if (resendApiKey == null || resendApiKey.isBlank()) {
-            log.warn(">>> [EMAIL SERVICE] Chưa cấu hình RESEND_API_KEY hoặc tài khoản SMTP hợp lệ.");
+        } else if ((brevoApiKey == null || brevoApiKey.isBlank()) && (resendApiKey == null || resendApiKey.isBlank())) {
+            log.warn(">>> [EMAIL SERVICE] Chưa cấu hình BREVO_API_KEY, RESEND_API_KEY hoặc tài khoản SMTP hợp lệ.");
         }
 
-        // 3. Fallback: In mã OTP ra log
+        // 4. Fallback: In mã OTP ra log
         log.info(">>> [EMAIL SERVICE - FALLBACK] Mã OTP đăng ký cho {} là: {}", toEmail, otpCode);
+    }
+
+    private boolean sendViaBrevo(String toEmail, String subject, String htmlContent) {
+        try {
+            String senderEmail = (brevoSenderEmail != null && !brevoSenderEmail.isBlank())
+                    ? brevoSenderEmail.trim()
+                    : "nhatnguyen10a1thd@gmail.com";
+
+            String jsonBody = "{"
+                    + "\"sender\":{\"name\":\"" + escapeJson(fromName) + "\",\"email\":\"" + escapeJson(senderEmail) + "\"},"
+                    + "\"to\":[{\"email\":\"" + escapeJson(toEmail.trim()) + "\"}],"
+                    + "\"subject\":\"" + escapeJson(subject) + "\","
+                    + "\"htmlContent\":\"" + escapeJson(htmlContent) + "\""
+                    + "}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .header("api-key", brevoApiKey.trim())
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info(">>> [EMAIL SERVICE - BREVO API] Đã gửi thành công email tới {}. Response: {}", toEmail, response.body());
+                return true;
+            } else {
+                log.error(">>> [EMAIL SERVICE - BREVO API] Gửi email tới {} thất bại (HTTP {}): {}", toEmail, response.statusCode(), response.body());
+                return false;
+            }
+        } catch (Exception ex) {
+            log.error(">>> [EMAIL SERVICE - BREVO API] Lỗi khi kết nối Brevo API: {}", ex.getMessage());
+            return false;
+        }
     }
 
     private boolean sendViaResend(String toEmail, String subject, String htmlContent) {
