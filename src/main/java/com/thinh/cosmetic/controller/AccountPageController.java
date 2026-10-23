@@ -47,6 +47,7 @@ public class AccountPageController {
             try {
                 model.addAttribute("customer", customerService.getProfile(customerId));
                 model.addAttribute("addresses", customerService.getAddresses(customerId));
+                model.addAttribute("beautyProfile", customerService.getBeautyProfile(customerId));
             } catch (Exception e) {
                 log.warn("Failed to load customer profile for ID {}: {}", customerId, e.getMessage());
             }

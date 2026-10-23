@@ -39,7 +39,11 @@
                             <i class="bi bi-person"></i>
                             <span>Thông tin cá nhân</span>
                         </a>
-                        <a th:href="@{/account/profile}" href="/account/profile" class="account-nav-link">
+                        <a th:href="@{/account/profile(tab='beauty-profile')}" href="/account/profile?tab=beauty-profile" class="account-nav-link">
+                            <i class="bi bi-sparkles"></i>
+                            <span>Hồ sơ da & Beauty Profile</span>
+                        </a>
+                        <a th:href="@{/account/profile(tab='addresses')}" href="/account/profile?tab=addresses" class="account-nav-link">
                             <i class="bi bi-geo-alt"></i>
                             <span>Sổ địa chỉ</span>
                         </a>

@@ -2,6 +2,30 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/head :: head(${pageTitle})}"></head>
 <body data-page="account-profile">
+    <style>
+        .bp-chip {
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--color-border-subtle);
+            color: var(--color-text-secondary);
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            border-radius: 99px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .bp-chip:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--color-gold-light);
+            color: var(--color-gold-light);
+        }
+        .bp-chip.active {
+            background: rgba(212, 175, 55, 0.22);
+            border-color: var(--color-gold-primary);
+            color: var(--color-gold-light);
+            font-weight: 500;
+        }
+    </style>
     <!-- Header Fragment -->
     <header th:replace="~{fragments/header :: header}"></header>
 
@@ -44,6 +68,12 @@
                                 class="account-nav-btn active">
                             <i class="bi bi-person"></i>
                             <span>Thông tin cá nhân</span>
+                        </button>
+
+                        <button type="button" role="tab" id="btnTabBeautyProfile" aria-controls="tab-beauty-profile" aria-selected="false" onclick="switchAccountTab('tab-beauty-profile', this)"
+                                class="account-nav-btn">
+                            <i class="bi bi-sparkles"></i>
+                            <span>Hồ sơ da & Beauty Profile</span>
                         </button>
 
                         <button type="button" role="tab" id="btnTabAddresses" aria-controls="tab-addresses" aria-selected="false" onclick="switchAccountTab('tab-addresses', this)"
@@ -137,7 +167,134 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: SỔ ĐỊA CHỈ NHẬN HÀNG (UC11) -->
+                    <!-- TAB 2: HỒ SƠ LÀM ĐẸP & LÀN DA (BEAUTY PROFILE - UC12-13) -->
+                    <div id="tab-beauty-profile" class="account-tab-content" role="tabpanel" aria-labelledby="btnTabBeautyProfile" tabindex="0" style="display: none;" hidden>
+                        <div style="margin-bottom: 28px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <h1 style="font-family: var(--font-serif); font-size: 2.2rem; font-weight: 500; color: var(--color-text-primary); margin: 0;">
+                                    Hồ sơ da & Beauty Profile
+                                </h1>
+                                <span class="badge-stock in-stock" style="background: rgba(212, 175, 55, 0.15); color: var(--color-gold-light); border: 1px solid rgba(212, 175, 55, 0.3); padding: 4px 10px; font-size: 0.72rem; border-radius: 99px;">
+                                    Cá nhân hóa
+                                </span>
+                            </div>
+                            <p style="font-size: 0.88rem; color: var(--color-text-muted); margin: 0;">
+                                Thiết lập loại da và nhu cầu cá nhân để LUNEA đề xuất quy trình dưỡng da & sản phẩm cao cấp phù hợp nhất cho riêng bạn.
+                            </p>
+                        </div>
+
+                        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); padding: 32px; box-shadow: var(--shadow-card); max-width: 720px; position: relative;">
+                            <!-- Header strip with update time -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border-subtle); flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px; color: var(--color-gold-light); font-size: 0.92rem; font-weight: 600;">
+                                    <i class="bi bi-heart-pulse"></i>
+                                    <span>Chỉ số & Đặc điểm làn da cá nhân</span>
+                                </div>
+                                <div style="font-size: 0.76rem; color: var(--color-text-muted);">
+                                    Cập nhật lần cuối: <strong id="bpLastUpdatedTime" style="color: var(--color-gold-light);" th:text="${beautyProfile != null and beautyProfile.updatedAt != null ? #temporals.format(beautyProfile.updatedAt, 'dd/MM/yyyy HH:mm') : 'Chưa cập nhật'}">Chưa cập nhật</strong>
+                                </div>
+                            </div>
+
+                            <form id="beautyProfileForm" onsubmit="handleUpdateBeautyProfile(event)">
+                                <!-- 1. Loại da -->
+                                <div class="form-group" style="margin-bottom: 22px;">
+                                    <label class="form-label" for="bpSkinTypeSelect" style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span>1. Loại da của bạn (Skin Type) *</span>
+                                        <span style="font-size: 0.75rem; color: var(--color-gold-light); font-weight: normal;">Đồng bộ với bộ lọc sản phẩm</span>
+                                    </label>
+                                    <select id="bpSkinTypeSelect" class="form-control-lunea" required onchange="updateSkinRecommendLink(this.value)">
+                                        <option value="" disabled th:selected="${beautyProfile == null or beautyProfile.skinType == null or beautyProfile.skinType == ''}">-- Chọn loại da chính xác của bạn --</option>
+                                        <option value="Da Dầu" th:selected="${beautyProfile != null and beautyProfile.skinType == 'Da Dầu'}">Da dầu / Hỗn hợp thiên dầu (Dễ bóng dầu, lỗ chân lông to)</option>
+                                        <option value="Da Khô" th:selected="${beautyProfile != null and beautyProfile.skinType == 'Da Khô'}">Da khô (Khô căng, thiếu ẩm, dễ bong tróc)</option>
+                                        <option value="Da Nhạy Cảm" th:selected="${beautyProfile != null and beautyProfile.skinType == 'Da Nhạy Cảm'}">Da nhạy cảm (Dễ kích ứng, mẩn đỏ, rát khi dùng mỹ phẩm)</option>
+                                        <option value="Da Hỗn Hợp" th:selected="${beautyProfile != null and beautyProfile.skinType == 'Da Hỗn Hợp'}">Da hỗn hợp (Dầu vùng chữ T, khô vùng má)</option>
+                                        <option value="Da Thường" th:selected="${beautyProfile != null and beautyProfile.skinType == 'Da Thường'}">Da thường (Cân bằng, khỏe mạnh, ít khuyết điểm)</option>
+                                    </select>
+                                </div>
+
+                                <!-- 2. Mối quan tâm về da -->
+                                <div class="form-group" style="margin-bottom: 22px;">
+                                    <label class="form-label" for="bpConcernsInput">2. Vấn đề hoặc mối quan tâm hàng đầu về da (Skin Concerns)</label>
+                                    <input type="text" id="bpConcernsInput" class="form-control-lunea" 
+                                           th:value="${beautyProfile != null ? beautyProfile.skinConcerns : ''}" 
+                                           placeholder="Ví dụ: Mụn ẩn, thâm sạm, nếp nhăn, lỗ chân lông to..." maxlength="255">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                                        <button type="button" class="bp-chip" data-val="Mụn & Thâm mụn" onclick="toggleBpChip('bpConcernsInput', 'Mụn & Thâm mụn', this)">+ Mụn & thâm</button>
+                                        <button type="button" class="bp-chip" data-val="Lão hóa & Nếp nhăn" onclick="toggleBpChip('bpConcernsInput', 'Lão hóa & Nếp nhăn', this)">+ Lão hóa & nếp nhăn</button>
+                                        <button type="button" class="bp-chip" data-val="Nám & Tàn nhang" onclick="toggleBpChip('bpConcernsInput', 'Nám & Tàn nhang', this)">+ Nám & sạm da</button>
+                                        <button type="button" class="bp-chip" data-val="Lỗ chân lông to" onclick="toggleBpChip('bpConcernsInput', 'Lỗ chân lông to', this)">+ Lỗ chân lông to</button>
+                                        <button type="button" class="bp-chip" data-val="Dễ kích ứng, ửng đỏ" onclick="toggleBpChip('bpConcernsInput', 'Dễ kích ứng, ửng đỏ', this)">+ Dễ ửng đỏ</button>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Nhu cầu chăm sóc chính -->
+                                <div class="form-group" style="margin-bottom: 22px;">
+                                    <label class="form-label" for="bpCareNeedsInput">3. Nhu cầu chăm sóc da ưu tiên (Care Needs)</label>
+                                    <input type="text" id="bpCareNeedsInput" class="form-control-lunea" 
+                                           th:value="${beautyProfile != null ? beautyProfile.careNeeds : ''}" 
+                                           placeholder="Ví dụ: Cấp ẩm tầng sâu, dưỡng trắng đều màu, phục hồi da..." maxlength="255">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                                        <button type="button" class="bp-chip" data-val="Cấp ẩm sâu & Phục hồi" onclick="toggleBpChip('bpCareNeedsInput', 'Cấp ẩm sâu & Phục hồi', this)">+ Cấp ẩm & Phục hồi</button>
+                                        <button type="button" class="bp-chip" data-val="Làm sáng & Đều màu da" onclick="toggleBpChip('bpCareNeedsInput', 'Làm sáng & Đều màu da', this)">+ Làm sáng da</button>
+                                        <button type="button" class="bp-chip" data-val="Kiềm dầu & Giảm mụn" onclick="toggleBpChip('bpCareNeedsInput', 'Kiềm dầu & Giảm mụn', this)">+ Kiềm dầu, ngừa mụn</button>
+                                        <button type="button" class="bp-chip" data-val="Chống oxy hóa & Nâng cơ" onclick="toggleBpChip('bpCareNeedsInput', 'Chống oxy hóa & Nâng cơ', this)">+ Chống lão hóa</button>
+                                        <button type="button" class="bp-chip" data-val="Bảo vệ màng ẩm da" onclick="toggleBpChip('bpCareNeedsInput', 'Bảo vệ màng ẩm da', this)">+ Phục hồi màng ẩm</button>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Tiêu chuẩn thành phần / Sở thích -->
+                                <div class="form-group" style="margin-bottom: 22px;">
+                                    <label class="form-label" for="bpPreferencesInput">4. Tiêu chuẩn thành phần & Sở thích mỹ phẩm (Preferences)</label>
+                                    <input type="text" id="bpPreferencesInput" class="form-control-lunea" 
+                                           th:value="${beautyProfile != null ? beautyProfile.preferences : ''}" 
+                                           placeholder="Ví dụ: Mỹ phẩm thuần chay, không cồn, không paraben..." maxlength="255">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                                        <button type="button" class="bp-chip" data-val="Thuần chay (Vegan)" onclick="toggleBpChip('bpPreferencesInput', 'Thuần chay (Vegan)', this)">+ Vegan</button>
+                                        <button type="button" class="bp-chip" data-val="Không cồn & Hương liệu" onclick="toggleBpChip('bpPreferencesInput', 'Không cồn & Hương liệu', this)">+ Không cồn / hương liệu</button>
+                                        <button type="button" class="bp-chip" data-val="Hữu cơ thiên nhiên (Organic)" onclick="toggleBpChip('bpPreferencesInput', 'Hữu cơ thiên nhiên (Organic)', this)">+ Organic</button>
+                                        <button type="button" class="bp-chip" data-val="Dược mỹ phẩm y khoa" onclick="toggleBpChip('bpPreferencesInput', 'Dược mỹ phẩm y khoa', this)">+ Dược mỹ phẩm</button>
+                                        <button type="button" class="bp-chip" data-val="Luxury High-End" onclick="toggleBpChip('bpPreferencesInput', 'Luxury High-End', this)">+ Luxury cao cấp</button>
+                                    </div>
+                                </div>
+
+                                <!-- 5. Khoảng giá quan tâm -->
+                                <div class="form-group" style="margin-bottom: 28px;">
+                                    <label class="form-label" for="bpPriceRangeSelect">5. Khoảng giá bạn thường ưu tiên khi mua sắm (Price Range Interest)</label>
+                                    <select id="bpPriceRangeSelect" class="form-control-lunea">
+                                        <option value="" th:selected="${beautyProfile == null or beautyProfile.priceRangeInterest == null or beautyProfile.priceRangeInterest == ''}">-- Tất cả các phân khúc --</option>
+                                        <option value="Dưới 500.000đ" th:selected="${beautyProfile != null and beautyProfile.priceRangeInterest == 'Dưới 500.000đ'}">Dưới 500.000đ (Phổ thông / Tiết kiệm)</option>
+                                        <option value="500.000đ - 1.500.000đ" th:selected="${beautyProfile != null and beautyProfile.priceRangeInterest == '500.000đ - 1.500.000đ'}">500.000đ - 1.500.000đ (Tiêu chuẩn / Bán chạy)</option>
+                                        <option value="1.500.000đ - 3.000.000đ" th:selected="${beautyProfile != null and beautyProfile.priceRangeInterest == '1.500.000đ - 3.000.000đ'}">1.500.000đ - 3.000.000đ (Cao cấp / Premium)</option>
+                                        <option value="Trên 3.000.000đ" th:selected="${beautyProfile != null and beautyProfile.priceRangeInterest == 'Trên 3.000.000đ'}">Trên 3.000.000đ (Thượng lưu / Luxury House)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Gợi ý sản phẩm dựa trên loại da -->
+                                <div id="bpRecommendationBox" style="background: rgba(212, 175, 55, 0.06); border: 1px dashed var(--color-border-gold); border-radius: var(--radius-sm); padding: 16px 20px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--color-gold-light); font-size: 0.92rem; display: flex; align-items: center; gap: 6px;">
+                                            <i class="bi bi-stars"></i>
+                                            <span>Gợi ý riêng cho làn da của bạn</span>
+                                        </div>
+                                        <div id="bpRecommendText" style="font-size: 0.82rem; color: var(--color-text-secondary); margin-top: 4px;">
+                                            Lựa chọn loại da ở trên để khám phá danh sách sản phẩm được tinh chỉnh phù hợp nhất.
+                                        </div>
+                                    </div>
+                                    <a id="bpExploreLink" th:href="@{/products}" href="/products" class="btn-product-outline" style="width: auto; padding: 8px 18px; font-size: 0.82rem; white-space: nowrap;">
+                                        Khám phá sản phẩm →
+                                    </a>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                                    <button type="submit" id="btnSaveBeautyProfile" class="btn-lunea-gold" style="width: auto; padding: 12px 32px; font-size: 0.9rem;">
+                                        <span>Lưu hồ sơ làm đẹp</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: SỔ ĐỊA CHỈ NHẬN HÀNG (UC11) -->
                     <div id="tab-addresses" class="account-tab-content" role="tabpanel" aria-labelledby="btnTabAddresses" tabindex="0" style="display: none;" hidden>
                         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 28px;">
                             <div>
@@ -293,7 +450,111 @@
             } catch (e) {
                 console.warn('Failed to load locations JSON');
             }
+
+            // Hỗ trợ mở trực tiếp tab qua param ?tab=... hoặc hash #...
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedTab = urlParams.get('tab') || (window.location.hash ? window.location.hash.replace('#', '') : '');
+            if (requestedTab === 'beauty-profile' || requestedTab === 'tab-beauty-profile') {
+                const bpBtn = document.getElementById('btnTabBeautyProfile');
+                if (bpBtn) switchAccountTab('tab-beauty-profile', bpBtn);
+            } else if (requestedTab === 'addresses' || requestedTab === 'tab-addresses') {
+                const addrBtn = document.getElementById('btnTabAddresses');
+                if (addrBtn) switchAccountTab('tab-addresses', addrBtn);
+            }
+
+            // Đồng bộ link gợi ý sản phẩm khi tải trang
+            const initSkinType = document.getElementById('bpSkinTypeSelect')?.value;
+            if (initSkinType) {
+                updateSkinRecommendLink(initSkinType);
+            }
+
+            // Kích hoạt trạng thái active cho các chip có sẵn trong input
+            ['bpConcernsInput', 'bpCareNeedsInput', 'bpPreferencesInput'].forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input && input.value) {
+                    const parts = input.value.split(',').map(s => s.trim().toLowerCase());
+                    const container = input.parentElement;
+                    if (container) {
+                        container.querySelectorAll('.bp-chip').forEach(chip => {
+                            const val = chip.getAttribute('data-val')?.trim().toLowerCase();
+                            if (val && parts.some(p => p.includes(val) || val.includes(p))) {
+                                chip.classList.add('active');
+                            }
+                        });
+                    }
+                }
+            });
         });
+
+        function updateSkinRecommendLink(skinType) {
+            const link = document.getElementById('bpExploreLink');
+            const text = document.getElementById('bpRecommendText');
+            if (!link || !text) return;
+            if (skinType) {
+                link.href = `/products?skinType=${encodeURIComponent(skinType)}`;
+                link.textContent = `Xem sản phẩm cho ${skinType} →`;
+                text.textContent = `LUNEA đã sẵn sàng các dòng sản phẩm dành riêng cho làn da "${skinType}" của bạn.`;
+            } else {
+                link.href = '/products';
+                link.textContent = 'Khám phá sản phẩm →';
+                text.textContent = 'Lựa chọn loại da ở trên để khám phá danh sách sản phẩm được tinh chỉnh phù hợp nhất.';
+            }
+        }
+
+        function toggleBpChip(inputId, value, btnEl) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            let current = input.value.trim();
+            let parts = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+            const index = parts.indexOf(value);
+            if (index > -1) {
+                parts.splice(index, 1);
+                if (btnEl) btnEl.classList.remove('active');
+            } else {
+                parts.push(value);
+                if (btnEl) btnEl.classList.add('active');
+            }
+            input.value = parts.join(', ');
+        }
+
+        async function handleUpdateBeautyProfile(e) {
+            e.preventDefault();
+            const skinType = document.getElementById('bpSkinTypeSelect').value;
+            const skinConcerns = document.getElementById('bpConcernsInput').value.trim();
+            const careNeeds = document.getElementById('bpCareNeedsInput').value.trim();
+            const preferences = document.getElementById('bpPreferencesInput').value.trim();
+            const priceRangeInterest = document.getElementById('bpPriceRangeSelect').value;
+
+            const btn = document.getElementById('btnSaveBeautyProfile');
+            if (btn) btn.disabled = true;
+
+            try {
+                await LUNEA.apiFetch(`/api/customers/${customerId}/beauty-profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        skinType: skinType,
+                        skinConcerns: skinConcerns,
+                        careNeeds: careNeeds,
+                        preferences: preferences,
+                        priceRangeInterest: priceRangeInterest
+                    })
+                });
+                LUNEA.showToast('Lưu hồ sơ da (Beauty Profile) thành công!', 'success');
+                updateSkinRecommendLink(skinType);
+                const updatedTimeEl = document.getElementById('bpLastUpdatedTime');
+                if (updatedTimeEl) {
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    updatedTimeEl.textContent = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                }
+            } catch (err) {
+                console.error(err);
+                LUNEA.showToast('Có lỗi xảy ra khi lưu hồ sơ làm đẹp!', 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
 
         function switchAccountTab(tabId, btn) {
             document.querySelectorAll('.account-tab-content').forEach(el => {
