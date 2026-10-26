@@ -160,7 +160,10 @@ public class ProductServiceImpl implements ProductService {
         return all.stream()
                 .filter(p -> matchesKeyword(p, keyword))
                 .filter(p -> brandId == null || (p.getBrand() != null && Objects.equals(p.getBrand().getId(), brandId)))
-                .filter(p -> categoryId == null || (p.getCategory() != null && Objects.equals(p.getCategory().getId(), categoryId)))
+                .filter(p -> categoryId == null || (p.getCategory() != null && (
+                        Objects.equals(p.getCategory().getId(), categoryId) ||
+                        (p.getCategory().getParentId() != null && Objects.equals(p.getCategory().getParentId(), categoryId))
+                )))
                 .filter(p -> matchesSkinType(p, skinType))
                 .filter(p -> matchesConcern(p, concern))
                 .filter(p -> matchesPriceRange(p, priceRange))
