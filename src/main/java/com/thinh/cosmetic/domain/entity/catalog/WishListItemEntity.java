@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "wishlist_items")
+@Table(name = "wishlist_items", indexes = {
+    @Index(name = "idx_wishlist_items_list", columnList = "wishlist_id"),
+    @Index(name = "idx_wishlist_items_prod", columnList = "product_id")
+})
 public class WishListItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

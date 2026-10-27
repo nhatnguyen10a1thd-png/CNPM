@@ -16,7 +16,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "inventories")
+@Table(name = "inventories", indexes = {
+    @Index(name = "idx_inv_store_sku", columnList = "store_id, sku_id"),
+    @Index(name = "idx_inv_sku", columnList = "sku_id")
+})
 public class InventoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

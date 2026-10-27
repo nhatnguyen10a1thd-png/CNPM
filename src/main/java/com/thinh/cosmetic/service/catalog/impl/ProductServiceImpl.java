@@ -44,6 +44,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -127,6 +129,26 @@ public class ProductServiceImpl implements ProductService {
                 .filter(p -> includeInactive || p.getStatus() == null || p.getStatus() == ActiveStatus.ACTIVE)
                 .toList();
         return enrichBatch(filtered);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getRelatedProducts(Long currentProductId, Long categoryId, Long brandId, int limit) {
+        if (currentProductId == null) return List.of();
+        Pageable pageable = PageRequest.of(0, Math.max(1, limit));
+        List<ProductEntity> relatedEntities = productRepository.findRelatedProducts(currentProductId, categoryId, brandId, pageable);
+        return enrichBatch(relatedEntities);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getFeaturedProducts(int limit) {
+        Pageable pageable = PageRequest.of(0, Math.max(1, limit));
+        List<ProductEntity> featured = productRepository.findTopFeaturedProducts(pageable);
+        if (featured.isEmpty()) {
+            featured = productRepository.findTopRecentProducts(pageable);
+        }
+        return enrichBatch(featured);
     }
 
     @Override

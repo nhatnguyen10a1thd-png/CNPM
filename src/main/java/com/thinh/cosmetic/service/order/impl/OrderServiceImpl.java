@@ -46,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -171,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
             skuQuantities.merge(item.getSku().getId(), item.getQuantity(), Integer::sum);
         }
 
-        // Store selection & stock check
+        // Store selection & stock check (accelerated via idx_inv_store_sku index)
         StoreEntity assignedStore;
         if (request.getFulfillmentStoreId() != null) {
             StoreEntity requestedStore = storeRepository.findById(request.getFulfillmentStoreId())
@@ -502,39 +503,11 @@ public class OrderServiceImpl implements OrderService {
             order.setConfirmedAt(LocalDateTime.now());
         } else if (status == OrderStatus.SHIPPING) {
             // Deduct actual stock on shipping (commit hold)
-            List<OrderReservationEntity> holds = stockHoldRepository.findByOrderId(id);
-            for (OrderReservationEntity hold : holds) {
-                if (hold.getStatus() == ReservationStatus.HELD) {
-                    hold.setStatus(ReservationStatus.COMMITTED);
-                    stockHoldRepository.save(hold);
-
-                    inventoryRepository.findByStoreIdAndSkuId(hold.getStore().getId(), hold.getSku().getId())
-                            .ifPresent(inv -> {
-                                inv.setActualStock(Math.max(0, inv.getActualStock() - hold.getQuantity()));
-                                inv.setHeldQuantity(Math.max(0, inv.getHeldQuantity() - hold.getQuantity()));
-                                inv.setUpdatedAt(LocalDateTime.now());
-                                inventoryRepository.save(inv);
-                            });
-                }
-            }
+            commitHeldInventory(id);
         } else if (status == OrderStatus.COMPLETED) {
             order.setCompletedAt(LocalDateTime.now());
             // Safety: commit any remaining held stock if somehow not already committed
-            List<OrderReservationEntity> holds = stockHoldRepository.findByOrderId(id);
-            for (OrderReservationEntity hold : holds) {
-                if (hold.getStatus() == ReservationStatus.HELD) {
-                    hold.setStatus(ReservationStatus.COMMITTED);
-                    stockHoldRepository.save(hold);
-
-                    inventoryRepository.findByStoreIdAndSkuId(hold.getStore().getId(), hold.getSku().getId())
-                            .ifPresent(inv -> {
-                                inv.setActualStock(Math.max(0, inv.getActualStock() - hold.getQuantity()));
-                                inv.setHeldQuantity(Math.max(0, inv.getHeldQuantity() - hold.getQuantity()));
-                                inv.setUpdatedAt(LocalDateTime.now());
-                                inventoryRepository.save(inv);
-                            });
-                }
-            }
+            commitHeldInventory(id);
         } else if (status == OrderStatus.CANCELLED) {
             order.setCancelledAt(LocalDateTime.now());
             // Release voucher usage count if one was applied
@@ -574,6 +547,24 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return updateStatus(id, OrderStatus.CANCELLED);
+    }
+
+    private void commitHeldInventory(Long orderId) {
+        List<OrderReservationEntity> holds = stockHoldRepository.findByOrderId(orderId);
+        for (OrderReservationEntity hold : holds) {
+            if (hold.getStatus() == ReservationStatus.HELD) {
+                hold.setStatus(ReservationStatus.COMMITTED);
+                stockHoldRepository.save(hold);
+
+                inventoryRepository.findByStoreIdAndSkuId(hold.getStore().getId(), hold.getSku().getId())
+                        .ifPresent(inv -> {
+                            inv.setActualStock(Math.max(0, inv.getActualStock() - hold.getQuantity()));
+                            inv.setHeldQuantity(Math.max(0, inv.getHeldQuantity() - hold.getQuantity()));
+                            inv.setUpdatedAt(LocalDateTime.now());
+                            inventoryRepository.save(inv);
+                        });
+            }
+        }
     }
 
     private List<OrderResponse> toResponseBatch(List<OrderEntity> orders) {

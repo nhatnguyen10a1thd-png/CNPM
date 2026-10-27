@@ -2,6 +2,9 @@ package com.thinh.cosmetic.domain.enums;
 
 public enum VoucherType {
     PERCENT,
+    PERCENTAGE,
     FIXED,
-    FREESHIP
+    FIXED_AMOUNT,
+    FREESHIP,
+    FREE_SHIPPING
 }

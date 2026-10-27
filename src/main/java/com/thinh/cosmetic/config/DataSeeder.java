@@ -133,8 +133,12 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         if (roleRepository.count() > 0 && accountRepository.count() > 0 && storeRepository.count() > 0) {
-            log.info(">>> [DataSeeder] Dữ liệu tài khoản đã tồn tại trong SQL Server. Bổ sung danh mục, sản phẩm & tồn kho phong phú nếu cần...");
             ensureDemoAccountsExist();
+            if (productRepository.count() >= 25) {
+                log.info(">>> [DataSeeder] Cơ sở dữ liệu đã được khởi tạo đầy đủ. Bỏ qua bước nạp dữ liệu.");
+                return;
+            }
+            log.info(">>> [DataSeeder] Dữ liệu tài khoản đã tồn tại trong SQL Server. Bổ sung danh mục, sản phẩm & tồn kho phong phú nếu cần...");
             seedVouchers();
             seedSuppliersAndWarehouseData();
             ensureCatalogEnriched();
@@ -1429,6 +1433,65 @@ public class DataSeeder implements CommandLineRunner {
                 "Số 18 Đường Cầu Giấy", "Phường Quan Hoa", "Quận Cầu Giấy", "Hà Nội");
         ensureCustomerAccount("khach03", "khach03@lunea.test", "0903456789", "Vũ Thanh Thảo", "123456", 350,
                 "Số 120 Đường Bạch Đằng", "Phường Hải Châu 1", "Quận Hải Châu", "Đà Nẵng");
+
+        // E. Quét bổ sung tự động cho bất kỳ Account nào chưa có Customer/Employee entity tương ứng
+        List<AccountEntity> allAccounts = accountRepository.findAll();
+        for (AccountEntity acc : allAccounts) {
+            if (acc.getAccountType() == AccountType.CUSTOMER) {
+                if (customerRepository.findByAccountId(acc.getId()).isEmpty()) {
+                    String rawName = acc.getUsername();
+                    if (acc.getEmail() != null && acc.getEmail().contains("@")) {
+                        rawName = acc.getEmail().split("@")[0];
+                    }
+                    String displayName = rawName.substring(0, 1).toUpperCase() + rawName.substring(1);
+                    CustomerEntity newCust = customerRepository.save(CustomerEntity.builder()
+                            .account(acc)
+                            .fullName(displayName)
+                            .dob(LocalDate.of(1998, 5, 15))
+                            .gender(Gender.FEMALE)
+                            .loyaltyPoints(100)
+                            .joinDate(LocalDate.now().minusMonths(2))
+                            .build());
+
+                    if (customerAddressRepository != null) {
+                        customerAddressRepository.save(CustomerAddressEntity.builder()
+                                .customerEntity(newCust)
+                                .recipientName(displayName)
+                                .phone(acc.getPhone() != null ? acc.getPhone() : "0901234567")
+                                .addressDetail("Số 88 Đường Nguyễn Huệ")
+                                .ward("Phường Bến Nghé")
+                                .district("Quận 1")
+                                .province("Hồ Chí Minh")
+                                .isDefault(true)
+                                .build());
+                    }
+
+                    if (cartRepository != null) {
+                        cartRepository.findByCustomerId(newCust.getId()).orElseGet(() ->
+                                cartRepository.save(CartEntity.builder()
+                                        .customer(newCust)
+                                        .updatedAt(LocalDateTime.now())
+                                        .build()));
+                    }
+                    log.info(">>> [DataSeeder] Đã tự động tạo hồ sơ khách hàng cho tài khoản: {}", acc.getUsername());
+                }
+            } else if (acc.getAccountType() == AccountType.EMPLOYEE) {
+                if (employeeRepository.findByAccountId(acc.getId()).isEmpty()) {
+                    EmployeeEntity newEmp = employeeRepository.save(EmployeeEntity.builder()
+                            .account(acc)
+                            .fullName(acc.getUsername())
+                            .internalEmail(acc.getEmail())
+                            .phone(acc.getPhone())
+                            .status(ActiveStatus.ACTIVE)
+                            .build());
+                    employeeRoleRepository.save(EmployeeRoleEntity.builder().employee(newEmp).role(orderRole).build());
+                    if (storeHcm != null) {
+                        employeeStoreRepository.save(EmployeeStoreEntity.builder().employee(newEmp).store(storeHcm).isPrimary(true).build());
+                    }
+                    log.info(">>> [DataSeeder] Đã tự động tạo nhân sự cho tài khoản: {}", acc.getUsername());
+                }
+            }
+        }
     }
 
     private void assignPermIfMissing(RoleEntity role, PermissionEntity perm) {

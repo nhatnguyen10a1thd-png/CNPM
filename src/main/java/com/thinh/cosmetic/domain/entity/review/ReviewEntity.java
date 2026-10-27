@@ -22,7 +22,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "reviews")
+@Table(name = "reviews", indexes = {
+    @Index(name = "idx_reviews_prod_status", columnList = "product_id, moderation_status"),
+    @Index(name = "idx_reviews_customer", columnList = "customer_id")
+})
 public class ReviewEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

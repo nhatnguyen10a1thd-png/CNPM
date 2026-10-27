@@ -27,8 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -138,17 +141,39 @@ public class WishListServiceImpl implements WishListService {
         List<WishListItemEntity> items = wishListItemRepository.findByWishListId(wishList.getId());
         List<WishListResponse.WishListItemResponse> itemResponses = new ArrayList<>();
 
+        List<Long> productIds = items.stream()
+                .map(item -> item.getProduct() != null ? item.getProduct().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<Long, String> imageMap = new HashMap<>();
+        Map<Long, List<ProductSkuEntity>> skuMap = new HashMap<>();
+
+        if (!productIds.isEmpty()) {
+            productImageRepository.findByProductIdInAndIsPrimaryTrue(productIds)
+                    .forEach(img -> {
+                        if (img.getProduct() != null) {
+                            imageMap.put(img.getProduct().getId(), img.getImageUrl());
+                        }
+                    });
+
+            List<ProductSkuEntity> allSkus = productSkuRepository.findByProductIdIn(productIds);
+            skuMap = allSkus.stream()
+                    .filter(s -> s.getProduct() != null)
+                    .collect(Collectors.groupingBy(s -> s.getProduct().getId()));
+        }
+
         for (WishListItemEntity item : items) {
             ProductEntity product = item.getProduct();
             if (product == null) continue;
 
-            String imageUrl = productImageRepository.findFirstByProductIdAndIsPrimaryTrue(product.getId())
-                    .map(ProductImageEntity::getImageUrl).orElse(null);
-
-            List<ProductSkuEntity> skus = productSkuRepository.findByProductId(product.getId());
-            if (skus == null) {
-                skus = Collections.emptyList();
+            String imageUrl = imageMap.get(product.getId());
+            List<ProductSkuEntity> skus = skuMap.get(product.getId());
+            if (skus == null || skus.isEmpty()) {
+                skus = productSkuRepository.findByProductId(product.getId());
             }
+            if (skus == null) skus = Collections.emptyList();
 
             BigDecimal price = skus.stream()
                     .map(ProductSkuEntity::getPrice)

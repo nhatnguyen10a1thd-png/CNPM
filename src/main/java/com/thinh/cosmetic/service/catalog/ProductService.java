@@ -17,6 +17,10 @@ public interface ProductService {
 
     List<ProductResponse> getAll(boolean includeInactive);
 
+    List<ProductResponse> getRelatedProducts(Long currentProductId, Long categoryId, Long brandId, int limit);
+
+    List<ProductResponse> getFeaturedProducts(int limit);
+
     List<ProductResponse> searchAndFilter(
             String keyword,
             Long brandId,

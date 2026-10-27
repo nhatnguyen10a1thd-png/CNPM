@@ -27,7 +27,7 @@ public class HomeController {
     public String home(@AuthenticationPrincipal AuthPrincipal principal, Model model) {
         model.addAttribute("pageTitle", "LUNEA | Thế Giới Mỹ Phẩm & Chăm Sóc Sắc Đẹp");
         model.addAttribute("activeNav", "home");
-        model.addAttribute("products", productService.getAll());
+        model.addAttribute("products", productService.getFeaturedProducts(8));
         model.addAttribute("brands", brandService.getAll());
         model.addAttribute("categories", categoryService.getAll());
         if (principal != null) {

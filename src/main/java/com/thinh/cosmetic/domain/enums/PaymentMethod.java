@@ -1,5 +1,8 @@
 package com.thinh.cosmetic.domain.enums;
 
 public enum PaymentMethod {
-    COD
+    COD,
+    BANK_TRANSFER,
+    VNPAY,
+    MOMO
 }

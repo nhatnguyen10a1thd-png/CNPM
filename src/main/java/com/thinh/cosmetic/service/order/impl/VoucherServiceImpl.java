@@ -246,13 +246,13 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         BigDecimal discount = BigDecimal.ZERO;
-        if (voucher.getDiscountType() == VoucherType.PERCENT) {
+        if (voucher.getDiscountType() == VoucherType.PERCENT || voucher.getDiscountType() == VoucherType.PERCENTAGE) {
             BigDecimal rate = voucher.getDiscountValue().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
             discount = subtotal.multiply(rate).setScale(0, RoundingMode.HALF_UP);
             if (voucher.getMaxDiscountAmount() != null && voucher.getMaxDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
                 discount = discount.min(voucher.getMaxDiscountAmount());
             }
-        } else if (voucher.getDiscountType() == VoucherType.FIXED) {
+        } else if (voucher.getDiscountType() == VoucherType.FIXED || voucher.getDiscountType() == VoucherType.FIXED_AMOUNT) {
             discount = voucher.getDiscountValue();
         }
 
@@ -265,7 +265,7 @@ public class VoucherServiceImpl implements VoucherService {
         if (voucher == null || shippingFee == null || shippingFee.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        if (voucher.getDiscountType() == VoucherType.FREESHIP) {
+        if (voucher.getDiscountType() == VoucherType.FREESHIP || voucher.getDiscountType() == VoucherType.FREE_SHIPPING) {
             if (voucher.getMaxDiscountAmount() != null && voucher.getMaxDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
                 return shippingFee.min(voucher.getMaxDiscountAmount());
             }

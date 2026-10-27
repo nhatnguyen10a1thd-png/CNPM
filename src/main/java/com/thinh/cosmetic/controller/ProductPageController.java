@@ -112,13 +112,8 @@ public class ProductPageController {
         final Long catId = product.getCategory() != null ? product.getCategory().getId() : null;
         final Long brandId = product.getBrand() != null ? product.getBrand().getId() : null;
 
-        // Suggested / Related Products in same category or brand
-        List<ProductResponse> relatedProducts = productService.getAll().stream()
-                .filter(p -> !id.equals(p.getId()))
-                .filter(p -> (catId != null && p.getCategory() != null && catId.equals(p.getCategory().getId()))
-                        || (brandId != null && p.getBrand() != null && brandId.equals(p.getBrand().getId())))
-                .limit(4)
-                .toList();
+        // Suggested / Related Products in same category or brand (optimized direct query)
+        List<ProductResponse> relatedProducts = productService.getRelatedProducts(id, catId, brandId, 4);
         model.addAttribute("relatedProducts", relatedProducts);
 
         model.addAttribute("pageTitle", product.getName() + " | LUNEA");

@@ -6,6 +6,7 @@ public enum OrderStatus {
     PREPARING,
     SHIPPING,
     COMPLETED,
+    DELIVERED,
     CANCELLED;
 
     public boolean canTransitionTo(OrderStatus next) {
@@ -19,8 +20,8 @@ public enum OrderStatus {
             case PENDING -> next == CONFIRMED || next == CANCELLED;
             case CONFIRMED -> next == PREPARING || next == CANCELLED;
             case PREPARING -> next == SHIPPING || next == CANCELLED;
-            case SHIPPING -> next == COMPLETED;
-            case COMPLETED, CANCELLED -> false;
+            case SHIPPING -> next == COMPLETED || next == DELIVERED;
+            case COMPLETED, DELIVERED, CANCELLED -> false;
         };
     }
 }

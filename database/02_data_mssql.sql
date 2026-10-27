@@ -17,7 +17,8 @@ INSERT INTO dbo.roles (id, name, description) VALUES
     (2, N'MANAGER', N'Quản lý chi nhánh showroom'),
     (3, N'ORDER_STAFF', N'Nhân viên điều phối và xử lý đơn hàng'),
     (4, N'WAREHOUSE_STAFF', N'Nhân viên quản lý kho và điều chuyển'),
-    (5, N'CUSTOMER', N'Khách hàng mua sắm LUNEA');
+    (5, N'CUSTOMER', N'Khách hàng mua sắm LUNEA'),
+    (6, N'PRODUCT_MANAGER', N'Quản lý danh mục sản phẩm');
 GO
 
 SET IDENTITY_INSERT dbo.roles OFF;
@@ -92,14 +93,17 @@ INSERT INTO dbo.role_permissions (id, role_id, permission_id) VALUES
     (34, 4, 6),
     (35, 4, 7),
     (36, 4, 8),
-    (37, 4, 9);
+    (37, 4, 9),
+    (38, 6, 1),
+    (39, 6, 6),
+    (40, 6, 14);
 GO
 
 SET IDENTITY_INSERT dbo.role_permissions OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: ACCOUNTS (6 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: ACCOUNTS (14 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.accounts ON;
 GO
@@ -109,8 +113,16 @@ INSERT INTO dbo.accounts (id, username, password_hash, email, phone, account_typ
     (2, N'order_hcm', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'order.hcm@lunea.test', N'0900000002', N'EMPLOYEE', N'ACTIVE'),
     (3, N'order_hn', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'order.hn@lunea.test', N'0900000003', N'EMPLOYEE', N'ACTIVE'),
     (4, N'warehouse_hcm', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'warehouse.hcm@lunea.test', N'0900000004', N'EMPLOYEE', N'ACTIVE'),
-    (5, N'khach01@lunea.test', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'khach01@lunea.test', N'0901234567', N'CUSTOMER', N'ACTIVE'),
-    (6, N'khach02@lunea.test', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'khach02@lunea.test', N'0909876543', N'CUSTOMER', N'ACTIVE');
+    (5, N'khach01', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'khach01@lunea.test', N'0901234567', N'CUSTOMER', N'ACTIVE'),
+    (6, N'nhatnguyen10a1@gmail.com', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'nhatnguyen10a1@gmail.com', N'0909876543', N'CUSTOMER', N'ACTIVE'),
+    (7, N'hachii130106@gmail.com', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'hachii130106@gmail.com', N'0907130106', N'CUSTOMER', N'ACTIVE'),
+    (8, N'product_manager', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'product.manager@lunea.test', N'0900000005', N'EMPLOYEE', N'ACTIVE'),
+    (9, N'warehouse_hn', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'warehouse.hn@lunea.test', N'0900000006', N'EMPLOYEE', N'ACTIVE'),
+    (10, N'warehouse_dn', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'warehouse.dn@lunea.test', N'0900000007', N'EMPLOYEE', N'ACTIVE'),
+    (11, N'order_dn', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'order.dn@lunea.test', N'0900000008', N'EMPLOYEE', N'ACTIVE'),
+    (12, N'khach02', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'khach02@lunea.test', N'0902345678', N'CUSTOMER', N'ACTIVE'),
+    (13, N'khach03', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'khach03@lunea.test', N'0903456789', N'CUSTOMER', N'ACTIVE'),
+    (14, N'nguyenhaihaltqb@gmail.com', N'$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', N'nguyenhaihaltqb@gmail.com', N'0908123789', N'CUSTOMER', N'ACTIVE');
 GO
 
 SET IDENTITY_INSERT dbo.accounts OFF;
@@ -132,7 +144,7 @@ SET IDENTITY_INSERT dbo.stores OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEES (4 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEES (8 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.employees ON;
 GO
@@ -141,14 +153,18 @@ INSERT INTO dbo.employees (id, account_id, full_name, work_email, phone, status)
     (1, 1, N'Nguyễn Quản Trị Hệ Thống', N'admin@lunea.test', N'0900000001', N'ACTIVE'),
     (2, 2, N'Trần Minh Quân (Đơn hàng HCM)', N'order.hcm@lunea.test', N'0900000002', N'ACTIVE'),
     (3, 3, N'Lê Thu Hà (Đơn hàng Hà Nội)', N'order.hn@lunea.test', N'0900000003', N'ACTIVE'),
-    (4, 4, N'Phạm Văn Kho (Thủ kho HCM)', N'warehouse.hcm@lunea.test', N'0900000004', N'ACTIVE');
+    (4, 4, N'Phạm Văn Kho (Thủ kho HCM)', N'warehouse.hcm@lunea.test', N'0900000004', N'ACTIVE'),
+    (5, 8, N'Hoàng Minh Long (Quản lý sản phẩm)', N'product.manager@lunea.test', N'0900000005', N'ACTIVE'),
+    (6, 9, N'Nguyễn Văn Tuấn (Thủ kho Hà Nội)', N'warehouse.hn@lunea.test', N'0900000006', N'ACTIVE'),
+    (7, 10, N'Đặng Thành Nam (Thủ kho Đà Nẵng)', N'warehouse.dn@lunea.test', N'0900000007', N'ACTIVE'),
+    (8, 11, N'Bùi Phương Thảo (Đơn hàng Đà Nẵng)', N'order.dn@lunea.test', N'0900000008', N'ACTIVE');
 GO
 
 SET IDENTITY_INSERT dbo.employees OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEE_ROLES (4 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEE_ROLES (8 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.employee_roles ON;
 GO
@@ -157,14 +173,18 @@ INSERT INTO dbo.employee_roles (id, employee_id, role_id) VALUES
     (1, 1, 1),
     (2, 2, 3),
     (3, 3, 3),
-    (4, 4, 4);
+    (4, 4, 4),
+    (5, 5, 6),
+    (6, 6, 4),
+    (7, 7, 4),
+    (8, 8, 3);
 GO
 
 SET IDENTITY_INSERT dbo.employee_roles OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEE_STORES (4 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: EMPLOYEE_STORES (8 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.employee_stores ON;
 GO
@@ -173,49 +193,65 @@ INSERT INTO dbo.employee_stores (id, employee_id, store_id, is_primary) VALUES
     (1, 1, 1, 1),
     (2, 2, 1, 1),
     (3, 3, 2, 1),
-    (4, 4, 1, 1);
+    (4, 4, 1, 1),
+    (5, 5, 1, 1),
+    (6, 6, 2, 1),
+    (7, 7, 3, 1),
+    (8, 8, 3, 1);
 GO
 
 SET IDENTITY_INSERT dbo.employee_stores OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: CUSTOMERS (2 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: CUSTOMERS (6 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.customers ON;
 GO
 
 INSERT INTO dbo.customers (id, account_id, full_name, birth_date, gender, loyalty_points, join_date) VALUES
     (1, 5, N'Lê Hoàng Yến', N'1998-05-15', N'FEMALE', 150, N'2025-01-10'),
-    (2, 6, N'Nguyễn Tuấn Anh', N'1995-11-20', N'MALE', 80, N'2025-02-14');
+    (2, 6, N'Nguyễn Tuấn Anh', N'1995-11-20', N'MALE', 80, N'2025-02-14'),
+    (3, 7, N'Nguyễn Hà Chi', N'2006-01-13', N'FEMALE', 60, N'2025-02-15'),
+    (4, 12, N'Nguyễn Minh Trang', N'1997-08-22', N'FEMALE', 85, N'2025-02-01'),
+    (5, 13, N'Vũ Thanh Thảo', N'1996-03-10', N'FEMALE', 350, N'2025-01-15'),
+    (6, 14, N'Nguyễn Hải Hà', N'2000-05-20', N'FEMALE', 120, N'2025-03-01');
 GO
 
 SET IDENTITY_INSERT dbo.customers OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: CUSTOMER_ADDRESSES (2 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: CUSTOMER_ADDRESSES (6 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.customer_addresses ON;
 GO
 
 INSERT INTO dbo.customer_addresses (id, customer_id, receiver_name, phone, address_detail, ward, district, province, is_default) VALUES
     (1, 1, N'Lê Hoàng Yến', N'0901234567', N'Số 45 Đường Lê Duẩn', N'Phường Bến Nghé', N'Quận 1', N'Hồ Chí Minh', 1),
-    (2, 2, N'Nguyễn Tuấn Anh', N'0909876543', N'Số 12 Ngõ 88 Phố Huế', N'Phường Hàng Bài', N'Quận Hoàn Kiếm', N'Hà Nội', 1);
+    (2, 2, N'Nguyễn Tuấn Anh', N'0909876543', N'Số 12 Ngõ 88 Phố Huế', N'Phường Hàng Bài', N'Quận Hoàn Kiếm', N'Hà Nội', 1),
+    (3, 3, N'Nguyễn Hà Chi', N'0907130106', N'Số 88 Đường Nguyễn Huệ', N'Phường Bến Nghé', N'Quận 1', N'Hồ Chí Minh', 1),
+    (4, 4, N'Nguyễn Minh Trang', N'0902345678', N'Số 18 Đường Cầu Giấy', N'Phường Quan Hoa', N'Quận Cầu Giấy', N'Hà Nội', 1),
+    (5, 5, N'Vũ Thanh Thảo', N'0903456789', N'Số 120 Đường Bạch Đằng', N'Phường Hải Châu 1', N'Quận Hải Châu', N'Đà Nẵng', 1),
+    (6, 6, N'Nguyễn Hải Hà', N'0908123789', N'Số 68 Đường Quang Trung', N'Phường Hải Châu 2', N'Quận Hải Châu', N'Đà Nẵng', 1);
 GO
 
 SET IDENTITY_INSERT dbo.customer_addresses OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: BEAUTY_PROFILES (2 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: BEAUTY_PROFILES (6 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.beauty_profiles ON;
 GO
 
 INSERT INTO dbo.beauty_profiles (id, customer_id, skin_type, skin_concerns, care_needs, preferences, price_range, updated_at) VALUES
     (1, 1, N'Da Dầu, Da Nhạy Cảm', N'Mụn ẩn, Thâm mụn, Lỗ chân lông to', N'Dưỡng Sáng Mờ Thâm, Trị Mụn', N'Mỹ phẩm thuần chay hữu cơ lành tính', N'300.000đ - 800.000đ', N'2026-03-01 10:00:00'),
-    (2, 2, N'Da Khô, Da Hỗn Hợp', N'Thiếu ẩm, Nứt nẻ mùa đông', N'Cấp Ẩm Chuyên Sâu, Phục Hồi Da', N'Dược mỹ phẩm dịu nhẹ không hương liệu', N'400.000đ - 1.200.000đ', N'2026-03-05 14:30:00');
+    (2, 2, N'Da Khô, Da Hỗn Hợp', N'Thiếu ẩm, Nứt nẻ mùa đông', N'Cấp Ẩm Chuyên Sâu, Phục Hồi Da', N'Dược mỹ phẩm dịu nhẹ không hương liệu', N'400.000đ - 1.200.000đ', N'2026-03-05 14:30:00'),
+    (3, 3, N'Da Hỗn Hợp Thiên Dầu', N'Mụn Đầu Đen, Bít Tắc Lỗ Chân Lông', N'Làm Sạch Sâu, Kiềm Dầu', N'Mỹ phẩm dịu nhẹ không cồn', N'250.000đ - 600.000đ', N'2026-03-10 10:00:00'),
+    (4, 4, N'Da Khô', N'Thiếu Ẩm, Nứt Nẻ Mùa Đông', N'Cấp Ẩm Chuyên Sâu, Phục Hồi Hàng Rào Bảo Vệ Da', N'Thành phần Hyaluronic Acid & Ceramide', N'400.000đ - 1.000.000đ', N'2026-03-11 11:00:00'),
+    (5, 5, N'Da Nhạy Cảm', N'Dễ Kích Ứng, Mẩn Đỏ', N'Làm Dịu Da, Chống Nắng Phổ Rộng', N'Dược mỹ phẩm không paraben, không hương liệu', N'500.000đ - 1.500.000đ', N'2026-03-12 14:00:00'),
+    (6, 6, N'Da Thường Đến Hỗn Hợp', N'Da Không Đều Màu, Thâm Sau Mụn', N'Dưỡng Sáng, Làm Đều Màu Da', N'Serum Vitamin C & Niacinamide', N'300.000đ - 800.000đ', N'2026-03-15 09:30:00');
 GO
 
 SET IDENTITY_INSERT dbo.beauty_profiles OFF;
@@ -2753,25 +2789,29 @@ SET IDENTITY_INSERT dbo.vouchers ON;
 GO
 
 INSERT INTO dbo.vouchers (id, code, name, description, discount_type, discount_value, max_discount_amount, min_order_amount, valid_from, valid_to, usage_limit, used_count, status) VALUES
-    (1, N'LUNEA10', N'Giảm 10% Cho Đơn Hàng Đầu Tiên', N'Áp dụng giảm 10% tối đa 50.000đ cho đơn hàng giá trị từ 200.000đ', N'PERCENTAGE', 10.0, 50000.0, 200000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 5000, 128, N'ACTIVE'),
-    (2, N'FREESHIP', N'Miễn Phí Vận Chuyển Toàn Quốc', N'Miễn phí vận chuyển tối đa 30.000đ cho đơn hàng giá trị từ 300.000đ', N'FREE_SHIPPING', 30000.0, 30000.0, 300000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 10000, 452, N'ACTIVE'),
-    (3, N'CHAOBANMOI', N'Voucher Chào Bạn Mới 50K', N'Giảm ngay 50.000đ tiền mặt cho đơn hàng đầu tiên từ 250.000đ', N'FIXED_AMOUNT', 50000.0, 50000.0, 250000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 2000, 310, N'ACTIVE'),
-    (4, N'VIPCARE', N'Đặc Quyền Thành Viên VIP LUNEA', N'Giảm 15% tối đa 150.000đ cho đơn hàng mỹ phẩm chăm sóc da từ 600.000đ', N'PERCENTAGE', 15.0, 150000.0, 600000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 1000, 85, N'ACTIVE'),
-    (5, N'LUNEASUMMER', N'Ưu Đãi Lễ Hội Mùa Hè Rực Rỡ', N'Giảm 20% tối đa 100.000đ cho tất cả dòng kem chống nắng và dưỡng ẩm', N'PERCENTAGE', 20.0, 100000.0, 400000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 3000, 219, N'ACTIVE');
+    (1, N'LUNEA10', N'Giảm 10% Cho Đơn Hàng Đầu Tiên', N'Áp dụng giảm 10% tối đa 50.000đ cho đơn hàng giá trị từ 200.000đ', N'PERCENT', 10.0, 50000.0, 200000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 5000, 128, N'ACTIVE'),
+    (2, N'FREESHIP', N'Miễn Phí Vận Chuyển Toàn Quốc', N'Miễn phí vận chuyển tối đa 30.000đ cho đơn hàng giá trị từ 300.000đ', N'FREESHIP', 30000.0, 30000.0, 300000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 10000, 452, N'ACTIVE'),
+    (3, N'CHAOBANMOI', N'Voucher Chào Bạn Mới 50K', N'Giảm ngay 50.000đ tiền mặt cho đơn hàng đầu tiên từ 250.000đ', N'FIXED', 50000.0, 50000.0, 250000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 2000, 310, N'ACTIVE'),
+    (4, N'VIPCARE', N'Đặc Quyền Thành Viên VIP LUNEA', N'Giảm 15% tối đa 150.000đ cho đơn hàng mỹ phẩm chăm sóc da từ 600.000đ', N'PERCENT', 15.0, 150000.0, 600000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 1000, 85, N'ACTIVE'),
+    (5, N'LUNEASUMMER', N'Ưu Đãi Lễ Hội Mùa Hè Rực Rỡ', N'Giảm 20% tối đa 100.000đ cho tất cả dòng kem chống nắng và dưỡng ẩm', N'PERCENT', 20.0, 100000.0, 400000.0, N'2025-01-01 00:00:00', N'2027-12-31 23:59:59', 3000, 219, N'ACTIVE');
 GO
 
 SET IDENTITY_INSERT dbo.vouchers OFF;
 GO
 
 -- ---------------------------------------------------------
--- NẠP DỮ LIỆU CHO BẢNG: CARTS (2 bản ghi)
+-- NẠP DỮ LIỆU CHO BẢNG: CARTS (6 bản ghi)
 -- ---------------------------------------------------------
 SET IDENTITY_INSERT dbo.carts ON;
 GO
 
 INSERT INTO dbo.carts (id, customer_id, updated_at) VALUES
     (1, 1, N'2026-03-20 14:00:00'),
-    (2, 2, N'2026-03-20 15:30:00');
+    (2, 2, N'2026-03-20 15:30:00'),
+    (3, 3, N'2026-03-20 16:00:00'),
+    (4, 4, N'2026-03-20 16:30:00'),
+    (5, 5, N'2026-03-20 17:00:00'),
+    (6, 6, N'2026-03-20 17:30:00');
 GO
 
 SET IDENTITY_INSERT dbo.carts OFF;

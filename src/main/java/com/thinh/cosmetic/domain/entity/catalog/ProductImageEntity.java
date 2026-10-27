@@ -15,7 +15,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "product_images")
+@Table(name = "product_images", indexes = {
+    @Index(name = "idx_images_prod_primary", columnList = "product_id, is_primary")
+})
 public class ProductImageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

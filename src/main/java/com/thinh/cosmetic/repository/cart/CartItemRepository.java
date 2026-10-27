@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> {
-    List<CartItemEntity> findByCartId(Long cartId);
+    @org.springframework.data.jpa.repository.Query("SELECT ci FROM CartItemEntity ci JOIN FETCH ci.sku s JOIN FETCH s.product p WHERE ci.cart.id = :cartId")
+    List<CartItemEntity> findByCartId(@org.springframework.data.repository.query.Param("cartId") Long cartId);
+
     Optional<CartItemEntity> findByCartIdAndSkuId(Long cartId, Long skuId);
     void deleteByCartId(Long cartId);
     void deleteBySkuIdIn(List<Long> skuIds);

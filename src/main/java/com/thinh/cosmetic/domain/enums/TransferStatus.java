@@ -4,5 +4,7 @@ public enum TransferStatus {
     PENDING,
     PENDING_EXPORT,
     IN_TRANSIT,
-    RECEIVED
+    RECEIVED,
+    COMPLETED,
+    CANCELLED
 }

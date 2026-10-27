@@ -31,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -140,12 +142,35 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public List<CustomerResponse> getAllCustomers() {
+        Map<Long, CustomerStats> statsMap = new HashMap<>();
+        if (orderRepository != null) {
+            try {
+                for (Object[] row : orderRepository.getCustomerOrderStats()) {
+                    Long customerId = (Long) row[0];
+                    Long totalOrders = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+                    BigDecimal totalSpent = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
+                    statsMap.put(customerId, new CustomerStats(totalOrders, totalSpent));
+                }
+            } catch (Exception e) {
+                // Fallback to empty stats on failure
+            }
+        }
+
         return customerRepository.findAll().stream().map(c -> {
             CustomerResponse res = customerMapper.toResponse(c);
-            enrichCustomerStats(res, c.getId());
+            CustomerStats stats = statsMap.get(c.getId());
+            if (stats != null) {
+                res.setTotalOrders(stats.totalOrders());
+                res.setTotalSpent(stats.totalSpent());
+            } else {
+                res.setTotalOrders(0L);
+                res.setTotalSpent(BigDecimal.ZERO);
+            }
             return res;
         }).toList();
     }
+
+    private record CustomerStats(Long totalOrders, BigDecimal totalSpent) {}
 
     @Override
     @Transactional(readOnly = true)

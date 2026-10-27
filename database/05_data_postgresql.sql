@@ -5,13 +5,14 @@
 -- =========================================================================
 BEGIN;
 
--- Nạp dữ liệu: roles (5 bản ghi)
+-- Nạp dữ liệu: roles (6 bản ghi)
 INSERT INTO roles (id, name, description) VALUES
     (1, 'ADMIN', 'Quản trị viên toàn quyền hệ thống'),
     (2, 'MANAGER', 'Quản lý chi nhánh showroom'),
     (3, 'ORDER_STAFF', 'Nhân viên điều phối và xử lý đơn hàng'),
     (4, 'WAREHOUSE_STAFF', 'Nhân viên quản lý kho và điều chuyển'),
-    (5, 'CUSTOMER', 'Khách hàng mua sắm LUNEA');
+    (5, 'CUSTOMER', 'Khách hàng mua sắm LUNEA'),
+    (6, 'PRODUCT_MANAGER', 'Quản lý danh mục sản phẩm');
 
 SELECT setval(pg_get_serial_sequence('roles', 'id'), coalesce(max(id), 1)) FROM roles;
 
@@ -72,18 +73,29 @@ INSERT INTO role_permissions (id, role_id, permission_id) VALUES
     (34, 4, 6),
     (35, 4, 7),
     (36, 4, 8),
-    (37, 4, 9);
+    (37, 4, 9),
+    (38, 6, 1),
+    (39, 6, 6),
+    (40, 6, 14);
 
 SELECT setval(pg_get_serial_sequence('role_permissions', 'id'), coalesce(max(id), 1)) FROM role_permissions;
 
--- Nạp dữ liệu: accounts (6 bản ghi)
+-- Nạp dữ liệu: accounts (14 bản ghi)
 INSERT INTO accounts (id, username, password_hash, email, phone, account_type, status) VALUES
     (1, 'admin', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'admin@lunea.test', '0900000001', 'EMPLOYEE', 'ACTIVE'),
     (2, 'order_hcm', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'order.hcm@lunea.test', '0900000002', 'EMPLOYEE', 'ACTIVE'),
     (3, 'order_hn', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'order.hn@lunea.test', '0900000003', 'EMPLOYEE', 'ACTIVE'),
     (4, 'warehouse_hcm', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'warehouse.hcm@lunea.test', '0900000004', 'EMPLOYEE', 'ACTIVE'),
-    (5, 'khach01@lunea.test', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'khach01@lunea.test', '0901234567', 'CUSTOMER', 'ACTIVE'),
-    (6, 'khach02@lunea.test', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'khach02@lunea.test', '0909876543', 'CUSTOMER', 'ACTIVE');
+    (5, 'khach01', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'khach01@lunea.test', '0901234567', 'CUSTOMER', 'ACTIVE'),
+    (6, 'nhatnguyen10a1@gmail.com', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'nhatnguyen10a1@gmail.com', '0909876543', 'CUSTOMER', 'ACTIVE'),
+    (7, 'hachii130106@gmail.com', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'hachii130106@gmail.com', '0907130106', 'CUSTOMER', 'ACTIVE'),
+    (8, 'product_manager', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'product.manager@lunea.test', '0900000005', 'EMPLOYEE', 'ACTIVE'),
+    (9, 'warehouse_hn', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'warehouse.hn@lunea.test', '0900000006', 'EMPLOYEE', 'ACTIVE'),
+    (10, 'warehouse_dn', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'warehouse.dn@lunea.test', '0900000007', 'EMPLOYEE', 'ACTIVE'),
+    (11, 'order_dn', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'order.dn@lunea.test', '0900000008', 'EMPLOYEE', 'ACTIVE'),
+    (12, 'khach02', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'khach02@lunea.test', '0902345678', 'CUSTOMER', 'ACTIVE'),
+    (13, 'khach03', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'khach03@lunea.test', '0903456789', 'CUSTOMER', 'ACTIVE'),
+    (14, 'nguyenhaihaltqb@gmail.com', '$2a$10$SxfvGvEM8Q3/Q6S5XQsXu.vmjoUF02k6/LTZLOBciadcDkRBI5ktm', 'nguyenhaihaltqb@gmail.com', '0908123789', 'CUSTOMER', 'ACTIVE');
 
 SELECT setval(pg_get_serial_sequence('accounts', 'id'), coalesce(max(id), 1)) FROM accounts;
 
@@ -95,51 +107,75 @@ INSERT INTO stores (id, name, address, province, phone, open_time, close_time, l
 
 SELECT setval(pg_get_serial_sequence('stores', 'id'), coalesce(max(id), 1)) FROM stores;
 
--- Nạp dữ liệu: employees (4 bản ghi)
+-- Nạp dữ liệu: employees (8 bản ghi)
 INSERT INTO employees (id, account_id, full_name, work_email, phone, status) VALUES
     (1, 1, 'Nguyễn Quản Trị Hệ Thống', 'admin@lunea.test', '0900000001', 'ACTIVE'),
     (2, 2, 'Trần Minh Quân (Đơn hàng HCM)', 'order.hcm@lunea.test', '0900000002', 'ACTIVE'),
     (3, 3, 'Lê Thu Hà (Đơn hàng Hà Nội)', 'order.hn@lunea.test', '0900000003', 'ACTIVE'),
-    (4, 4, 'Phạm Văn Kho (Thủ kho HCM)', 'warehouse.hcm@lunea.test', '0900000004', 'ACTIVE');
+    (4, 4, 'Phạm Văn Kho (Thủ kho HCM)', 'warehouse.hcm@lunea.test', '0900000004', 'ACTIVE'),
+    (5, 8, 'Hoàng Minh Long (Quản lý sản phẩm)', 'product.manager@lunea.test', '0900000005', 'ACTIVE'),
+    (6, 9, 'Nguyễn Văn Tuấn (Thủ kho Hà Nội)', 'warehouse.hn@lunea.test', '0900000006', 'ACTIVE'),
+    (7, 10, 'Đặng Thành Nam (Thủ kho Đà Nẵng)', 'warehouse.dn@lunea.test', '0900000007', 'ACTIVE'),
+    (8, 11, 'Bùi Phương Thảo (Đơn hàng Đà Nẵng)', 'order.dn@lunea.test', '0900000008', 'ACTIVE');
 
 SELECT setval(pg_get_serial_sequence('employees', 'id'), coalesce(max(id), 1)) FROM employees;
 
--- Nạp dữ liệu: employee_roles (4 bản ghi)
+-- Nạp dữ liệu: employee_roles (8 bản ghi)
 INSERT INTO employee_roles (id, employee_id, role_id) VALUES
     (1, 1, 1),
     (2, 2, 3),
     (3, 3, 3),
-    (4, 4, 4);
+    (4, 4, 4),
+    (5, 5, 6),
+    (6, 6, 4),
+    (7, 7, 4),
+    (8, 8, 3);
 
 SELECT setval(pg_get_serial_sequence('employee_roles', 'id'), coalesce(max(id), 1)) FROM employee_roles;
 
--- Nạp dữ liệu: employee_stores (4 bản ghi)
+-- Nạp dữ liệu: employee_stores (8 bản ghi)
 INSERT INTO employee_stores (id, employee_id, store_id, is_primary) VALUES
     (1, 1, 1, 1),
     (2, 2, 1, 1),
     (3, 3, 2, 1),
-    (4, 4, 1, 1);
+    (4, 4, 1, 1),
+    (5, 5, 1, 1),
+    (6, 6, 2, 1),
+    (7, 7, 3, 1),
+    (8, 8, 3, 1);
 
 SELECT setval(pg_get_serial_sequence('employee_stores', 'id'), coalesce(max(id), 1)) FROM employee_stores;
 
--- Nạp dữ liệu: customers (2 bản ghi)
+-- Nạp dữ liệu: customers (6 bản ghi)
 INSERT INTO customers (id, account_id, full_name, birth_date, gender, loyalty_points, join_date) VALUES
     (1, 5, 'Lê Hoàng Yến', '1998-05-15', 'FEMALE', 150, '2025-01-10'),
-    (2, 6, 'Nguyễn Tuấn Anh', '1995-11-20', 'MALE', 80, '2025-02-14');
+    (2, 6, 'Nguyễn Tuấn Anh', '1995-11-20', 'MALE', 80, '2025-02-14'),
+    (3, 7, 'Nguyễn Hà Chi', '2006-01-13', 'FEMALE', 60, '2025-02-15'),
+    (4, 12, 'Nguyễn Minh Trang', '1997-08-22', 'FEMALE', 85, '2025-02-01'),
+    (5, 13, 'Vũ Thanh Thảo', '1996-03-10', 'FEMALE', 350, '2025-01-15'),
+    (6, 14, 'Nguyễn Hải Hà', '2000-05-20', 'FEMALE', 120, '2025-03-01');
 
 SELECT setval(pg_get_serial_sequence('customers', 'id'), coalesce(max(id), 1)) FROM customers;
 
--- Nạp dữ liệu: customer_addresses (2 bản ghi)
+-- Nạp dữ liệu: customer_addresses (6 bản ghi)
 INSERT INTO customer_addresses (id, customer_id, receiver_name, phone, address_detail, ward, district, province, is_default) VALUES
     (1, 1, 'Lê Hoàng Yến', '0901234567', 'Số 45 Đường Lê Duẩn', 'Phường Bến Nghé', 'Quận 1', 'Hồ Chí Minh', 1),
-    (2, 2, 'Nguyễn Tuấn Anh', '0909876543', 'Số 12 Ngõ 88 Phố Huế', 'Phường Hàng Bài', 'Quận Hoàn Kiếm', 'Hà Nội', 1);
+    (2, 2, 'Nguyễn Tuấn Anh', '0909876543', 'Số 12 Ngõ 88 Phố Huế', 'Phường Hàng Bài', 'Quận Hoàn Kiếm', 'Hà Nội', 1),
+    (3, 3, 'Nguyễn Hà Chi', '0907130106', 'Số 88 Đường Nguyễn Huệ', 'Phường Bến Nghé', 'Quận 1', 'Hồ Chí Minh', 1),
+    (4, 4, 'Nguyễn Minh Trang', '0902345678', 'Số 18 Đường Cầu Giấy', 'Phường Quan Hoa', 'Quận Cầu Giấy', 'Hà Nội', 1),
+    (5, 5, 'Vũ Thanh Thảo', '0903456789', 'Số 120 Đường Bạch Đằng', 'Phường Hải Châu 1', 'Quận Hải Châu', 'Đà Nẵng', 1),
+    (6, 6, 'Nguyễn Hải Hà', '0908123789', 'Số 68 Đường Quang Trung', 'Phường Hải Châu 2', 'Quận Hải Châu', 'Đà Nẵng', 1);
 
 SELECT setval(pg_get_serial_sequence('customer_addresses', 'id'), coalesce(max(id), 1)) FROM customer_addresses;
 
--- Nạp dữ liệu: beauty_profiles (2 bản ghi)
+-- Nạp dữ liệu: beauty_profiles (6 bản ghi)
 INSERT INTO beauty_profiles (id, customer_id, skin_type, skin_concerns, care_needs, preferences, price_range, updated_at) VALUES
     (1, 1, 'Da Dầu, Da Nhạy Cảm', 'Mụn ẩn, Thâm mụn, Lỗ chân lông to', 'Dưỡng Sáng Mờ Thâm, Trị Mụn', 'Mỹ phẩm thuần chay hữu cơ lành tính', '300.000đ - 800.000đ', '2026-03-01 10:00:00'),
-    (2, 2, 'Da Khô, Da Hỗn Hợp', 'Thiếu ẩm, Nứt nẻ mùa đông', 'Cấp Ẩm Chuyên Sâu, Phục Hồi Da', 'Dược mỹ phẩm dịu nhẹ không hương liệu', '400.000đ - 1.200.000đ', '2026-03-05 14:30:00');
+    (2, 2, 'Da Khô, Da Hỗn Hợp', 'Thiếu ẩm, Nứt nẻ mùa đông', 'Cấp Ẩm Chuyên Sâu, Phục Hồi Da', 'Dược mỹ phẩm dịu nhẹ không hương liệu', '400.000đ - 1.200.000đ', '2026-03-05 14:30:00'),
+    (3, 3, 'Da Hỗn Hợp Thiên Dầu', 'Mụn Đầu Đen, Bít Tắc Lỗ Chân Lông', 'Làm Sạch Sâu, Kiềm Dầu', 'Mỹ phẩm dịu nhẹ không cồn', '250.000đ - 600.000đ', '2026-03-10 10:00:00'),
+    (4, 4, 'Da Khô', 'Thiếu Ẩm, Nứt Nẻ Mùa Đông', 'Cấp Ẩm Chuyên Sâu, Phục Hồi Hàng Rào Bảo Vệ Da', 'Thành phần Hyaluronic Acid & Ceramide', '400.000đ - 1.000.000đ', '2026-03-11 11:00:00'),
+    (5, 5, 'Da Nhạy Cảm', 'Dễ Kích Ứng, Mẩn Đỏ', 'Làm Dịu Da, Chống Nắng Phổ Rộng', 'Dược mỹ phẩm không paraben, không hương liệu', '500.000đ - 1.500.000đ', '2026-03-12 14:00:00'),
+    (6, 6, 'Da Thường Đến Hỗn Hợp', 'Da Không Đều Màu, Thâm Sau Mụn', 'Dưỡng Sáng, Làm Đều Màu Da', 'Serum Vitamin C & Niacinamide', '300.000đ - 800.000đ', '2026-03-15 09:30:00');
 
 SELECT setval(pg_get_serial_sequence('beauty_profiles', 'id'), coalesce(max(id), 1)) FROM beauty_profiles;
 
@@ -2565,18 +2601,22 @@ SELECT setval(pg_get_serial_sequence('inventories', 'id'), coalesce(max(id), 1))
 
 -- Nạp dữ liệu: vouchers (5 bản ghi)
 INSERT INTO vouchers (id, code, name, description, discount_type, discount_value, max_discount_amount, min_order_amount, valid_from, valid_to, usage_limit, used_count, status) VALUES
-    (1, 'LUNEA10', 'Giảm 10% Cho Đơn Hàng Đầu Tiên', 'Áp dụng giảm 10% tối đa 50.000đ cho đơn hàng giá trị từ 200.000đ', 'PERCENTAGE', 10.0, 50000.0, 200000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 5000, 128, 'ACTIVE'),
-    (2, 'FREESHIP', 'Miễn Phí Vận Chuyển Toàn Quốc', 'Miễn phí vận chuyển tối đa 30.000đ cho đơn hàng giá trị từ 300.000đ', 'FREE_SHIPPING', 30000.0, 30000.0, 300000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 10000, 452, 'ACTIVE'),
-    (3, 'CHAOBANMOI', 'Voucher Chào Bạn Mới 50K', 'Giảm ngay 50.000đ tiền mặt cho đơn hàng đầu tiên từ 250.000đ', 'FIXED_AMOUNT', 50000.0, 50000.0, 250000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 2000, 310, 'ACTIVE'),
-    (4, 'VIPCARE', 'Đặc Quyền Thành Viên VIP LUNEA', 'Giảm 15% tối đa 150.000đ cho đơn hàng mỹ phẩm chăm sóc da từ 600.000đ', 'PERCENTAGE', 15.0, 150000.0, 600000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 1000, 85, 'ACTIVE'),
-    (5, 'LUNEASUMMER', 'Ưu Đãi Lễ Hội Mùa Hè Rực Rỡ', 'Giảm 20% tối đa 100.000đ cho tất cả dòng kem chống nắng và dưỡng ẩm', 'PERCENTAGE', 20.0, 100000.0, 400000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 3000, 219, 'ACTIVE');
+    (1, 'LUNEA10', 'Giảm 10% Cho Đơn Hàng Đầu Tiên', 'Áp dụng giảm 10% tối đa 50.000đ cho đơn hàng giá trị từ 200.000đ', 'PERCENT', 10.0, 50000.0, 200000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 5000, 128, 'ACTIVE'),
+    (2, 'FREESHIP', 'Miễn Phí Vận Chuyển Toàn Quốc', 'Miễn phí vận chuyển tối đa 30.000đ cho đơn hàng giá trị từ 300.000đ', 'FREESHIP', 30000.0, 30000.0, 300000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 10000, 452, 'ACTIVE'),
+    (3, 'CHAOBANMOI', 'Voucher Chào Bạn Mới 50K', 'Giảm ngay 50.000đ tiền mặt cho đơn hàng đầu tiên từ 250.000đ', 'FIXED', 50000.0, 50000.0, 250000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 2000, 310, 'ACTIVE'),
+    (4, 'VIPCARE', 'Đặc Quyền Thành Viên VIP LUNEA', 'Giảm 15% tối đa 150.000đ cho đơn hàng mỹ phẩm chăm sóc da từ 600.000đ', 'PERCENT', 15.0, 150000.0, 600000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 1000, 85, 'ACTIVE'),
+    (5, 'LUNEASUMMER', 'Ưu Đãi Lễ Hội Mùa Hè Rực Rỡ', 'Giảm 20% tối đa 100.000đ cho tất cả dòng kem chống nắng và dưỡng ẩm', 'PERCENT', 20.0, 100000.0, 400000.0, '2025-01-01 00:00:00', '2027-12-31 23:59:59', 3000, 219, 'ACTIVE');
 
 SELECT setval(pg_get_serial_sequence('vouchers', 'id'), coalesce(max(id), 1)) FROM vouchers;
 
--- Nạp dữ liệu: carts (2 bản ghi)
+-- Nạp dữ liệu: carts (6 bản ghi)
 INSERT INTO carts (id, customer_id, updated_at) VALUES
     (1, 1, '2026-03-20 14:00:00'),
-    (2, 2, '2026-03-20 15:30:00');
+    (2, 2, '2026-03-20 15:30:00'),
+    (3, 3, '2026-03-20 16:00:00'),
+    (4, 4, '2026-03-20 16:30:00'),
+    (5, 5, '2026-03-20 17:00:00'),
+    (6, 6, '2026-03-20 17:30:00');
 
 SELECT setval(pg_get_serial_sequence('carts', 'id'), coalesce(max(id), 1)) FROM carts;
 

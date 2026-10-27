@@ -18,7 +18,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "skus")
+@Table(name = "skus", indexes = {
+    @Index(name = "idx_skus_product", columnList = "product_id"),
+    @Index(name = "idx_skus_code", columnList = "sku_code")
+})
 public class ProductSkuEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

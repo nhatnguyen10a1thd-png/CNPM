@@ -144,6 +144,21 @@ public class CartServiceImpl implements CartService {
         BigDecimal subtotal = BigDecimal.ZERO;
         int totalItems = 0;
 
+        java.util.Set<Long> productIds = items.stream()
+                .map(i -> (i.getSku() != null && i.getSku().getProduct() != null) ? i.getSku().getProduct().getId() : null)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Map<Long, String> imageMap = new java.util.HashMap<>();
+        if (!productIds.isEmpty()) {
+            productImageRepository.findByProductIdInAndIsPrimaryTrue(productIds)
+                    .forEach(img -> {
+                        if (img.getProduct() != null) {
+                            imageMap.put(img.getProduct().getId(), img.getImageUrl());
+                        }
+                    });
+        }
+
         for (CartItemEntity item : items) {
             ProductSkuEntity sku = item.getSku();
             BigDecimal price = sku.getPrice() != null ? sku.getPrice() : BigDecimal.ZERO;
@@ -151,14 +166,14 @@ public class CartServiceImpl implements CartService {
             subtotal = subtotal.add(lineTotal);
             totalItems += item.getQuantity();
 
-            String imageUrl = productImageRepository.findFirstByProductIdAndIsPrimaryTrue(sku.getProduct().getId())
-                    .map(ProductImageEntity::getImageUrl).orElse(null);
+            Long productId = (sku.getProduct() != null) ? sku.getProduct().getId() : null;
+            String imageUrl = productId != null ? imageMap.get(productId) : null;
 
             itemResponses.add(CartItemResponse.builder()
                     .id(item.getId())
                     .skuId(sku.getId())
                     .skuCode(sku.getSkuCode())
-                    .productName(sku.getProduct().getName())
+                    .productName(sku.getProduct() != null ? sku.getProduct().getName() : "Sản phẩm")
                     .variantName(sku.getVariantName())
                     .price(price)
                     .quantity(item.getQuantity())

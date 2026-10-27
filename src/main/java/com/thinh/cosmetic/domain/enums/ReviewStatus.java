@@ -3,5 +3,7 @@ package com.thinh.cosmetic.domain.enums;
 public enum ReviewStatus {
     VISIBLE,
     HIDDEN,
-    PENDING
+    PENDING,
+    APPROVED,
+    REJECTED
 }

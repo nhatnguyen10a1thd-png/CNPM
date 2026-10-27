@@ -20,4 +20,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 
     @Query("SELECT DISTINCT o FROM OrderEntity o LEFT JOIN FETCH o.customer LEFT JOIN FETCH o.assignedStore LEFT JOIN FETCH o.voucher ORDER BY o.createdAt DESC")
     List<OrderEntity> findAllByOrderByCreatedAtDesc();
+
+    @Query("SELECT o.customer.id, COUNT(o), SUM(CASE WHEN o.status != com.thinh.cosmetic.domain.enums.OrderStatus.CANCELLED THEN o.totalAmount ELSE 0 END) " +
+           "FROM OrderEntity o WHERE o.customer.id IS NOT NULL GROUP BY o.customer.id")
+    List<Object[]> getCustomerOrderStats();
 }

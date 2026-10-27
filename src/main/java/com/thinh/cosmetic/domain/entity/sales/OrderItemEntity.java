@@ -19,7 +19,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_items", indexes = {
+    @Index(name = "idx_items_order", columnList = "order_id"),
+    @Index(name = "idx_items_sku", columnList = "sku_id")
+})
 public class OrderItemEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
